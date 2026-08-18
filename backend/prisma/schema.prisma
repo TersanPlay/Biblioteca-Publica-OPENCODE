@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         String     @default("ATTENDANT")
+  status       String     @default("ACTIVE")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  loans        Loan[]
+  logs         AuditLog[]
+}
+
+model Reader {
+  id           Int            @id @default(autoincrement())
+  name         String
+  cpf          String         @unique
+  birthDate    DateTime?
+  phone        String?
+  email        String?
+  cep          String?
+  address      String?
+  number       String?
+  neighborhood String?
+  city         String?
+  state        String?
+  status       String         @default("ACTIVE")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  loans        Loan[]
+  reservations Reservation[]
+}
+
+model Author {
+  id        Int          @id @default(autoincrement())
+  name      String
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  books     BookAuthor[]
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  bookLinks   BookCategory[]
+}
+
+model Book {
+  id              Int          @id @default(autoincrement())
+  isbn10          String?      @unique
+  isbn13          String?      @unique
+  title           String
+  subtitle        String?
+  description     String?
+  publisher       String?
+  edition         Int?
+  publicationYear Int?
+  language        String?
+  pages           Int?
+  coverUrl        String?
+  isArchived      Boolean      @default(false)
+  categories      BookCategory[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  authors         BookAuthor[]
+  loans           Loan[]
+  reservations    Reservation[]
+}
+
+model BookAuthor {
+  bookId   Int
+  authorId Int
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+}
+
+model BookCategory {
+  bookId     Int
+  categoryId Int
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, categoryId])
+}
+
+model Loan {
+  id         Int        @id @default(autoincrement())
+  number     String?    @unique
+  readerId   Int
+  bookId     Int
+  userId     Int
+  loanDate   DateTime   @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+  renewals   Int        @default(0)
+  notes      String?
+  status     String     @default("ACTIVE")
+  reader     Reader     @relation(fields: [readerId], references: [id])
+  book       Book       @relation(fields: [bookId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([status])
+  @@index([readerId])
+  @@index([bookId])
+  @@index([dueDate])
+  @@index([loanDate])
+  @@index([returnedAt])
+}
+
+model Reservation {
+  id          Int       @id @default(autoincrement())
+  readerId    Int
+  bookId      Int
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  fulfilledAt DateTime?
+  reader      Reader    @relation(fields: [readerId], references: [id])
+  book        Book      @relation(fields: [bookId], references: [id])
+
+  @@index([bookId, status])
+  @@index([status])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([userId])
+}
+
+model Setting {
+  id              Int      @id @default(1)
+  loanLimit       Int      @default(4)
+  defaultLoanDays Int      @default(15)
+  maxRenewals     Int      @default(1)
+  libraryName     String   @default("")
+  libraryAddress  String?
+  libraryPhone    String?
+  libraryEmail    String?
+  libraryHours    String?
+  updatedAt       DateTime @updatedAt
+}
