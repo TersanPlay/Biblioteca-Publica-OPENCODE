@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { app } from './app';
+import { startBackupCrons } from './modules/backup.routes';
 
 const port = Number(process.env.PORT || 3333);
 
@@ -10,6 +11,7 @@ if (!process.env.JWT_SECRET) {
 
 const server = app.listen(port, () => {
   console.log(`API da Livraria Pública rodando em http://localhost:${port}/api`);
+  startBackupCrons();
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {

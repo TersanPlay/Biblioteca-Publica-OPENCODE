@@ -201,6 +201,25 @@ Parâmetros: `type` (obrigatório) + `start`, `end`, `categoryId`, `bookId`, `re
 |---|---|---|
 | GET | `/api/dashboard` | `{ totalBooks, availableBooks, loanedBooks, activeReaders, activeLoans, overdueLoans, recentLoans[5], recentReturns[5], overdue[5], topBooks[5] }` (topBooks: últimos 30 dias) |
 
+## Backup — `ADMIN` apenas
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/backups` | Lista backups existentes (ordenados por data desc) |
+| POST | `/api/backups` | Cria backup manual (`VACUUM INTO`). Rotação automática: mantém apenas 5 |
+| POST | `/api/backups/:filename/restore` | Restaura banco a partir do backup (substitui `dev.db`) |
+| DELETE | `/api/backups/:filename` | Remove backup |
+
+`GET /backups` retorna:
+
+```json
+[
+  { "filename": "backup_2026-08-21_18-30.sqlite", "size": 53248, "createdAt": "2026-08-21T18:30:00.000Z" }
+]
+```
+
+Backups automáticos: dois agendamentos diários via `node-cron` (18:30 e 23:45). Arquivos em `backend/backups/`. Validação de `filename`: regex `^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.sqlite$`.
+
 ---
 
 ## Discrepâncias conhecidas frontend × backend

@@ -138,6 +138,12 @@ export interface AuditLog {
   user?: { id: number; name: string; email: string } | null;
 }
 
+export interface Backup {
+  filename: string;
+  size: number;
+  createdAt: string;
+}
+
 export interface LibrarySettings {
   loanLimit: number;
   defaultLoanDays: number;

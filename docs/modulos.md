@@ -16,6 +16,7 @@
 | Audit | `audit.routes.ts` | `/api/audit` | ADMIN |
 | Settings | `settings.routes.ts` | `/api/settings` | GET público; PUT ADMIN |
 | Dashboard | `dashboard.routes.ts` | `/api/dashboard` | auth |
+| Backup | `backup.routes.ts` | `/api/backups` | ADMIN (módulo inteiro) |
 
 ### Helpers de domínio
 
@@ -25,6 +26,7 @@
 - `lib/settings.ts` — `getSettings()` (regras + dados institucionais; defaults estruturais sem dados de demonstração).
 - `lib/cover.ts` — `resolveAmazonCover` (scrap da Amazon por ISBN), `isbn13To10`.
 - `lib/audit.ts` — `writeAudit`.
+- `backup.routes.ts` — `createBackup` (VACUUM INTO), `rotateBackups` (mantém 5), `startBackupCrons` (18:30 e 23:45).
 
 ## Frontend — rotas (`src/app/router/routes.tsx`)
 
@@ -56,6 +58,7 @@
 | `/admin/usuarios` | Usuários do sistema | `RequireAdmin` |
 | `/admin/configuracoes` | Configurações (limites + dados institucionais) | `RequireAdmin` |
 | `/admin/auditoria` | Trilha de auditoria | `RequireAdmin` |
+| `/admin/backup` | Backup & Restauração | `RequireAdmin` |
 
 ### Outras
 
@@ -75,7 +78,7 @@
 Instância axios com `baseURL` = `VITE_API_URL || '/api'`; injeta token do `localStorage` (`livraria_token`) e, em resposta `401` (fora do login), limpa o token e emite `auth:unauthorized` para desconectar a sessão.
 
 ### `src/features/`
-- `api.ts` — clientes por entidade: `booksApi`, `authorsApi`, `categoriesApi`, `readersApi`, `loansApi` (inclui `createBatch`), `reservationsApi`, `reportsApi`, `usersApi`, `auditApi`, `settingsApi`, `dashboardApi`. Payloads limpos (campos vazios removidos); livro converte `BookFormValues` → `{ authorIds, authorNames }`.
+- `api.ts` — clientes por entidade: `booksApi`, `authorsApi`, `categoriesApi`, `readersApi`, `loansApi` (inclui `createBatch`), `reservationsApi`, `reportsApi`, `usersApi`, `auditApi`, `settingsApi`, `dashboardApi`, `backupsApi`. Payloads limpos (campos vazios removidos); livro converte `BookFormValues` → `{ authorIds, authorNames }`.
 - `auth/auth-provider.tsx` — estado de sessão (login/logout, persistência do token).
 
 ### `src/components/`
@@ -86,4 +89,4 @@ Instância axios com `baseURL` = `VITE_API_URL || '/api'`; injeta token do `loca
 Uma página por rota (ver tabelas acima), em `pages/public/`, `pages/admin/`, `pages/auth/`.
 
 ### `src/types/api.ts`
-Tipos das entidades (`Book`, `Loan`, `Reader`, `Reservation`, `User`, `Category`, `Author`, `AuditLog`, `ReportResult`, `LibrarySettings`, `DashboardData`, `Paginated<T>` etc.).
+Tipos das entidades (`Book`, `Loan`, `Reader`, `Reservation`, `User`, `Category`, `Author`, `AuditLog`, `ReportResult`, `LibrarySettings`, `DashboardData`, `Backup`, `Paginated<T>` etc.).

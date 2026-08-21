@@ -2,6 +2,7 @@ import { api } from '../services/axios';
 import type {
   Author,
   AuditLog,
+  Backup,
   Book,
   BookFormValues,
   BookRef,
@@ -163,4 +164,11 @@ export const settingsApi = {
 
 export const dashboardApi = {
   get: () => api.get<DashboardData>('/dashboard').then((r) => r.data),
+};
+
+export const backupsApi = {
+  list: () => api.get<Backup[]>('/backups').then((r) => r.data),
+  create: () => api.post<Backup>('/backups').then((r) => r.data),
+  restore: (filename: string) => api.post(`/backups/${filename}/restore`).then((r) => r.data),
+  remove: (filename: string) => api.delete(`/backups/${filename}`).then((r) => r.data),
 };

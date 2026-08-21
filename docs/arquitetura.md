@@ -30,6 +30,7 @@ Aplicação web de duas camadas para gestão de biblioteca pública:
 | Validação | Zod 3 (`src/validation.ts`) |
 | Autenticação | JWT (`jsonwebtoken`) + bcryptjs |
 | Rate limit | `express-rate-limit` (login e consulta de capa) |
+| Cron | `node-cron` (backups automáticos 18:30 e 23:45) |
 
 ### Frontend (`frontend/`)
 
@@ -74,6 +75,7 @@ backend/
       error-handler.ts   notFoundHandler + errorHandler
       async-handler.ts
     modules/             Um router por domínio (ver docs/modulos.md)
+  backups/               Backups do banco (.sqlite)
 
 frontend/
   src/
@@ -113,8 +115,8 @@ frontend/
 
 | Papel | Acesso |
 |---|---|
-| `ADMIN` | Tudo: dashboard, livros, empréstimos, devoluções, reservas, leitores, autores, categorias, relatórios, usuários, configurações, auditoria |
-| `ATTENDANT` | Dashboard, livros, empréstimos, devoluções, reservas, leitores, autores (consulta/criação) — **sem** usuários, relatórios, configurações, auditoria, categorias (escrita) |
+| `ADMIN` | Tudo: dashboard, livros, empréstimos, devoluções, reservas, leitores, autores, categorias, relatórios, usuários, configurações, auditoria, backup |
+| `ATTENDANT` | Dashboard, livros, empréstimos, devoluções, reservas, leitores, autores (consulta/criação) — **sem** usuários, relatórios, configurações, auditoria, categorias (escrita), backup |
 
 Aplicação no backend: `requireRoles('ADMIN')` em users, categories (escrita), reports, audit, settings (PUT). No frontend: guarda `RequireAdmin` envolve essas rotas.
 
@@ -123,6 +125,15 @@ Aplicação no backend: `requireRoles('ADMIN')` em users, categories (escrita), 
 - `writeAudit(userId, action, entity, entityId, metadata, ip)` grava em `AuditLog`; falha de escrita não derruba a operação (log de erro).
 - Ações registradas: `LOGIN`, `LOGOUT`, `LOGIN_FAILED`, `USER_CREATED`, `USER_UPDATED`, `USER_PASSWORD_RESET`, `BOOK_CREATED`, `BOOK_UPDATED`, `BOOK_ARCHIVED`, `BOOK_RESTORED`, `AUTHOR_CREATED`, `AUTHOR_UPDATED`, `AUTHOR_ACTIVATED`, `AUTHOR_INACTIVATED`, `CATEGORY_CREATED`, `CATEGORY_UPDATED`, `CATEGORY_STATUS_CHANGED`, `READER_CREATED`, `READER_UPDATED`, `READER_STATUS_CHANGED`, `LOAN_CREATED`, `LOAN_RETURNED`, `LOAN_RENEWED`, `RESERVATION_CREATED`, `RESERVATION_CANCELLED`, `RESERVATION_FULFILLED`, `SETTINGS_UPDATED`.
 - Consulta: `GET /api/audit` (ADMIN) com filtros por ação, usuário e período.
+
+## Backups
+
+- Backups automáticos: `node-cron` agenda dois horários diários (18:30 e 23:45).
+- Mecanismo: `VACUUM INTO` (SQLite 3.27+) — seguro com escritas concorrentes.
+- Armazenamento: `backend/backups/` com arquivos `backup_YYYY-MM-DD_HH-mm.sqlite`.
+- Rotação: mantém apenas os 5 backups mais recentes; os antigos são deletados automaticamente.
+- Restauração: `POST /api/backups/:filename/restore` copia o arquivo sobre `dev.db` (requer restart do servidor).
+- Endpoints protegidos: `requireAuth` + `requireRoles('ADMIN')` em todas as rotas.
 
 ## Rate limits
 

@@ -21,6 +21,7 @@ import { ReportsPage } from '../../pages/admin/reports';
 import { UsersPage } from '../../pages/admin/users';
 import { SettingsPage } from '../../pages/admin/settings';
 import { AuditPage } from '../../pages/admin/audit';
+import { BackupsPage } from '../../pages/admin/backups';
 import { NotFoundPage } from '../../pages/not-found';
 
 export function AppRoutes() {
@@ -51,6 +52,7 @@ export function AppRoutes() {
             <Route path="admin/usuarios" element={<UsersPage />} />
             <Route path="admin/configuracoes" element={<SettingsPage />} />
             <Route path="admin/auditoria" element={<AuditPage />} />
+            <Route path="admin/backup" element={<BackupsPage />} />
           </Route>
         </Route>
       </Route>

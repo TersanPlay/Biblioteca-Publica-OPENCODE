@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Building2, Save, SlidersHorizontal } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ export function SettingsPage() {
     resolver: zodResolver(schema),
   });
 
-  useEffect(() => {
+  const initialized = useCallback(() => {
     if (data) {
       reset({
         loanLimit: data.loanLimit,
@@ -58,6 +58,14 @@ export function SettingsPage() {
       });
     }
   }, [data, reset]);
+
+  const ref = useRef(false);
+  useEffect(() => {
+    if (!ref.current && data) {
+      ref.current = true;
+      initialized();
+    }
+  }, [data, initialized]);
 
   const submit = async (v: z.infer<typeof schema>) => {
     setBusy(true);
