@@ -111,7 +111,7 @@ npm start                 # Inicia produção (requer build antes)
 
 ## Convenções Importantes
 
-- **IDs Appwrite**: Entidades usam `$id` (string) gerado pelo Appwrite. Relacionamentos de livro (autores, categorias, áreas) são desnormalizados como arrays de ids/nomes no documento.
+- **IDs Appwrite**: Entidades usam `$id` (string) gerado pelo Appwrite. Relacionamentos de livro (autores, assuntos, áreas) são desnormalizados como arrays de ids/nomes no documento.
 - **Enums**: Appwrite não tem enums nativos. Campos como `format` e `acquisitionType` são strings validadas por Zod em `backend/src/validation.ts`.
 - **Snapshots em empréstimos**: Dados do leitor/livro/usuário são salvos no momento do empréstimo para uso nos Termos PDF.
 - **Autores**: Formulário aceita nomes separados por vírgulas. Nomes não cadastrados são criados automaticamente (find-or-create, case-insensitive).

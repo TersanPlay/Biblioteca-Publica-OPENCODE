@@ -22,7 +22,7 @@ const REPORT_TYPES: { value: ReportType; label: string; desc: string }[] = [
   { value: 'returns-period', label: 'Devoluções por período', desc: 'Filtre por data de retorno' },
   { value: 'active-readers', label: 'Leitores ativos', desc: 'Cadastros em pleno uso' },
   { value: 'top-books', label: 'Livros mais emprestados', desc: 'Ranking de popularidade' },
-  { value: 'categories', label: 'Distribuição por categoria', desc: 'Acervo agrupado por assunto' },
+  { value: 'subjects', label: 'Distribuição por assunto', desc: 'Acervo agrupado por assunto' },
 ];
 
 const WEEKS: Record<'7d' | '30d' | '90d', { label: string; days: number }> = {

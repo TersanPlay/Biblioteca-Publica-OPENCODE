@@ -12,11 +12,11 @@ import { Pagination } from '../../components/ui/pagination';
 import { Skeleton } from '../../components/ui/skeleton';
 import { NativeSelect } from '../../components/ui/select';
 import { TD, TH, TBody, THead, TR, Table } from '../../components/ui/table';
-import { booksApi, categoriesApi } from '../../features/api';
+import { booksApi, subjectsApi } from '../../features/api';
 import { useDebounce } from '../../features/hooks/use-debounce';
 import { useToast } from '../../features/toast/toast-provider';
 import { apiErrorMessage } from '../../lib/errors';
-import type { Book, Category, Paginated } from '../../types/api';
+import type { Book, Subject, Paginated } from '../../types/api';
 
 const FORMAT_LABELS: Record<string, string> = {
   CAPA: 'Capa',
@@ -27,7 +27,7 @@ const FORMAT_LABELS: Record<string, string> = {
 export function BooksPage() {
   const [params, setParams] = useSearchParams();
   const q = params.get('q') ?? '';
-  const category = params.get('category') ?? '';
+  const subjectId = params.get('subjectId') ?? '';
   const format = params.get('format') ?? '';
   const availability = params.get('availability') ?? '';
   const status = params.get('status') ?? 'all';
@@ -36,7 +36,7 @@ export function BooksPage() {
   const [input, setInput] = useState(q);
   const debounced = useDebounce(input, 350);
   const [data, setData] = useState<Paginated<Book> | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<Book | null>(null);
@@ -47,7 +47,7 @@ export function BooksPage() {
   }, [q]);
 
   useEffect(() => {
-    categoriesApi.all().then(setCategories).catch(() => undefined);
+    subjectsApi.all().then(setSubjects).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function BooksPage() {
     booksApi
       .list({
         search: debounced || undefined,
-        categoryId: category || undefined,
+        subjectId: subjectId || undefined,
         format: format || undefined,
         availability: availability === 'available' ? 'available' : availability === 'unavailable' ? 'unavailable' : undefined,
         includeArchived: status === 'active' ? 0 : 1,
@@ -66,7 +66,7 @@ export function BooksPage() {
       .then(setData)
       .catch((err) => setError(apiErrorMessage(err)))
       .finally(() => setLoading(false));
-  }, [debounced, category, format, availability, status, page]);
+  }, [debounced, subjectId, format, availability, status, page]);
 
   const syncParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -101,9 +101,9 @@ export function BooksPage() {
           />
         </div>
         <NativeSelect
-          value={category || 'all'}
-          onChange={(v) => syncParam('category', v === 'all' ? '' : v)}
-          options={[{ value: 'all', label: 'Todas as categorias' }, ...categories.map((c) => ({ value: String(c.$id), label: c.name }))]}
+          value={subjectId || 'all'}
+          onChange={(v) => syncParam('subjectId', v === 'all' ? '' : v)}
+          options={[{ value: 'all', label: 'Todos os assuntos' }, ...subjects.map((s) => ({ value: String(s.$id), label: s.name }))]}
           className="lg:w-52"
         />
         <NativeSelect
@@ -160,7 +160,7 @@ export function BooksPage() {
                   <TR>
                     <TH>Capa</TH>
                     <TH>Título</TH>
-                    <TH>Categoria</TH>
+                    <TH>Assunto</TH>
                     <TH>Formato</TH>
                     <TH className="text-center">Disponibilidade</TH>
                     <TH>Status</TH>
@@ -186,9 +186,9 @@ export function BooksPage() {
                         )}
                       </TD>
                       <TD>
-                        {b.categoryNames.length > 0 ? (
+                        {b.subjectNames.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {b.categoryNames.map((n, i) => (
+                            {b.subjectNames.map((n, i) => (
                               <Badge key={`${n}-${i}`} variant="primary">{n}</Badge>
                             ))}
                           </div>
@@ -281,8 +281,8 @@ export function BooksPage() {
             toast('success', archiving.isArchived ? 'Livro restaurado' : 'Livro arquivado');
             setArchiving(null);
             setLoading(true);
-            booksApi
-              .list({ search: debounced || undefined, categoryId: category || undefined, format: format || undefined, availability: availability === 'available' ? 'available' : availability === 'unavailable' ? 'unavailable' : undefined, includeArchived: status === 'active' ? 0 : 1, page, pageSize: 10 })
+              booksApi
+              .list({ search: debounced || undefined, subjectId: subjectId || undefined, format: format || undefined, availability: availability === 'available' ? 'available' : availability === 'unavailable' ? 'unavailable' : undefined, includeArchived: status === 'active' ? 0 : 1, page, pageSize: 10 })
               .then(setData)
               .catch((err) => setError(apiErrorMessage(err)))
               .finally(() => setLoading(false));

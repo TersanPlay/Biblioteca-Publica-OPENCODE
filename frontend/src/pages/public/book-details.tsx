@@ -63,7 +63,7 @@ export function BookDetailsPage() {
     { icon: ListOrdered, label: 'Páginas', value: book.pages ? String(book.pages) : null },
     { icon: Layers, label: 'Edição', value: book.edition ? `${book.edition}ª` : null },
     { icon: Library, label: 'Editora', value: book.publisher },
-    { icon: BookOpen, label: 'Categorias', value: book.categoryNames.length > 0 ? book.categoryNames.join(', ') : null },
+    { icon: BookOpen, label: 'Assuntos', value: book.subjectNames.length > 0 ? book.subjectNames.join(', ') : null },
   ].filter((i) => i.value);
 
   return (
@@ -87,10 +87,10 @@ export function BookDetailsPage() {
 
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            {book.categoryNames.map((name, i) => (
+            {book.subjectNames.map((name, i) => (
               <Badge key={`${name}-${i}`} variant="primary">{name}</Badge>
             ))}
-            {book.categoryNames.length === 0 && <Badge variant="primary">Sem categoria</Badge>}
+            {book.subjectNames.length === 0 && <Badge variant="primary">Sem assunto</Badge>}
             {(book.isbn13 ?? book.isbn10) && <Badge variant="neutral">{book.isbn13 ?? book.isbn10}</Badge>}
             <Badge variant={book.isAvailable ? 'success' : 'warning'} dot>
               {book.hasActiveLoan

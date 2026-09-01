@@ -8,10 +8,10 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { Pagination } from '../../components/ui/pagination';
 import { NativeSelect } from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
-import { booksApi, categoriesApi } from '../../features/api';
+import { booksApi, subjectsApi } from '../../features/api';
 import { useDebounce } from '../../features/hooks/use-debounce';
 import { cn } from '../../lib/utils';
-import type { Book, Category, Paginated } from '../../types/api';
+import type { Book, Subject, Paginated } from '../../types/api';
 
 const SORTS = [
   { value: 'newest', label: 'Mais recentes' },
@@ -22,7 +22,7 @@ const SORTS = [
 export function CatalogPage() {
   const [params, setParams] = useSearchParams();
   const q = params.get('q') ?? '';
-  const category = params.get('category') ?? '';
+  const subjectId = params.get('subjectId') ?? '';
   const rawSort = params.get('sort');
   const sort = rawSort && rawSort !== 'featured' ? rawSort : 'newest';
   const page = Number(params.get('page') ?? '1');
@@ -30,7 +30,7 @@ export function CatalogPage() {
   const [input, setInput] = useState(q);
   const debounced = useDebounce(input, 350);
   const [data, setData] = useState<Paginated<Book> | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -40,17 +40,17 @@ export function CatalogPage() {
   }, [q]);
 
   useEffect(() => {
-    categoriesApi.all().then(setCategories).catch(() => undefined);
+    subjectsApi.all().then(setSubjects).catch(() => undefined);
   }, []);
 
   useEffect(() => {
     const next = new URLSearchParams();
     if (debounced) next.set('q', debounced);
-    if (category) next.set('category', category);
+    if (subjectId) next.set('subjectId', subjectId);
     if (sort !== 'newest') next.set('sort', sort);
     if (page > 1) next.set('page', String(page));
     setParams(next, { replace: true });
-  }, [debounced, category, sort, page]);
+  }, [debounced, subjectId, sort, page]);
 
   useEffect(() => {
     setLoading(true);
@@ -58,7 +58,7 @@ export function CatalogPage() {
     booksApi
       .list({
         search: debounced || undefined,
-        categoryId: category || undefined,
+        subjectId: subjectId || undefined,
         sort: sort !== 'newest' ? sort : undefined,
         page,
         pageSize: 12,
@@ -66,12 +66,12 @@ export function CatalogPage() {
       .then(setData)
       .catch(() => setError('Não foi possível carregar o catálogo.'))
       .finally(() => setLoading(false));
-  }, [debounced, category, sort, page, attempt]);
+  }, [debounced, subjectId, sort, page, attempt]);
 
-  const setCategory = (v: string) => {
+  const setSubjectId = (v: string) => {
     const next = new URLSearchParams(params);
-    if (v) next.set('category', v);
-    else next.delete('category');
+    if (v) next.set('subjectId', v);
+    else next.delete('subjectId');
     next.delete('page');
     setParams(next);
   };
@@ -89,8 +89,8 @@ export function CatalogPage() {
     setParams(new URLSearchParams());
   };
 
-  const activeCategory = categories.find((c) => String(c.$id) === category);
-  const hasFilters = Boolean(debounced || category || sort !== 'newest');
+  const activeSubject = subjects.find((s) => String(s.$id) === subjectId);
+  const hasFilters = Boolean(debounced || subjectId || sort !== 'newest');
 
   return (
     <div className="bg-canvasWarm">
@@ -110,7 +110,7 @@ export function CatalogPage() {
             Catálogo
           </h1>
           <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">
-            Explore todos os livros, filtre por categoria e veja a disponibilidade em tempo real.
+                    Explore todos os livros, filtre por assunto e veja a disponibilidade em tempo real.
           </p>
         </div>
       </section>
@@ -147,43 +147,43 @@ export function CatalogPage() {
                 </p>
                 <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
                   <button
-                    onClick={() => setCategory('')}
+                    onClick={() => setSubjectId('')}
                     className={cn(
                       'shrink-0 rounded-core px-3.5 py-2 text-left text-[13px] font-semibold transition-all duration-200 [transition-timing-function:var(--ease)] lg:flex lg:items-center lg:justify-between lg:gap-2',
-                      !category
+                      !subjectId
                         ? 'bg-primary text-white shadow-card'
                         : 'text-muted hover:bg-canvas hover:text-ink',
                     )}
                   >
-                    Todas as categorias
+                    Todos os assuntos
                     <span
                       className={cn(
                         'hidden text-[11.5px] font-bold tabular-nums lg:inline',
-                        !category ? 'text-white/80' : 'text-muted/70',
+                        !subjectId ? 'text-white/80' : 'text-muted/70',
                       )}
                     >
-                      {categories.reduce((sum, c) => sum + (c._count?.books ?? 0), 0)}
+                      {subjects.reduce((sum, s) => sum + (s._count?.books ?? 0), 0)}
                     </span>
                   </button>
-                  {categories.map((c) => (
+                  {subjects.map((s) => (
                     <button
-                      key={c.$id}
-                      onClick={() => setCategory(String(c.$id))}
+                      key={s.$id}
+                      onClick={() => setSubjectId(String(s.$id))}
                       className={cn(
                         'shrink-0 rounded-core px-3.5 py-2 text-left text-[13px] font-semibold transition-all duration-200 [transition-timing-function:var(--ease)] lg:flex lg:items-center lg:justify-between lg:gap-2',
-                        category === String(c.$id)
+                        subjectId === String(s.$id)
                           ? 'bg-primary text-white shadow-card'
                           : 'text-muted hover:bg-canvas hover:text-ink',
                       )}
                     >
-                      {c.name}
+                      {s.name}
                       <span
                         className={cn(
                           'hidden text-[11.5px] font-bold tabular-nums lg:inline',
-                          category === String(c.$id) ? 'text-white/80' : 'text-muted/70',
+                          subjectId === String(s.$id) ? 'text-white/80' : 'text-muted/70',
                         )}
                       >
-                        {c._count?.books ?? 0}
+                        {s._count?.books ?? 0}
                       </span>
                     </button>
                   ))}
@@ -201,8 +201,8 @@ export function CatalogPage() {
                     onClear={() => setInput('')}
                   />
                 )}
-                {activeCategory && (
-                  <FilterChip label={activeCategory.name} onClear={() => setCategory('')} />
+                {activeSubject && (
+                  <FilterChip label={activeSubject.name} onClear={() => setSubjectId('')} />
                 )}
                 {sort !== 'newest' && (
                   <FilterChip

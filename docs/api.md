@@ -50,12 +50,12 @@ Público para leitura; escrita exige autenticação.
 | GET | `/api/books/cover` | — | Busca capa/dados na Amazon por ISBN. Rate limit: 30/15 min. `404` se não achar |
 | GET | `/api/books/exists` | ✅ | Verifica ISBN cadastrado: `?isbn=&exclude=` → `{ book }` ou `{ book: null }` |
 | GET | `/api/books/:id` | — | Detalhe + últimos 10 empréstimos + `hasActiveLoan` |
-| POST | `/api/books` | ✅ | Cria livro (autores, categorias e áreas de conhecimento por nome inclusos) |
-| PUT | `/api/books/:id` | ✅ | Atualiza livro (autores, categorias e áreas de conhecimento reatribuídos) |
+| POST | `/api/books` | ✅ | Cria livro (autores, assuntos e áreas de conhecimento por nome inclusos) |
+| PUT | `/api/books/:id` | ✅ | Atualiza livro (autores, assuntos e áreas de conhecimento reatribuídos) |
 | DELETE | `/api/books/:id` | ✅ | Arquiva (soft delete): `{ ok, isArchived: true }` |
 | PATCH | `/api/books/:id/restore` | ✅ | Desarquiva: `{ ok, isArchived: false }` |
 
-Query de `GET /books`: `search` (título, subtítulo, ISBN, editora, autor), `categoryId`, `availability` (`available`/`unavailable`), `format` (`CAPA`/`BROCHURA`/`ESPIRAL`), `sort` (`newest` [padrão]/`oldest`/`title`), `includeArchived` (bool).
+Query de `GET /books`: `search` (título, subtítulo, ISBN, editora, autor), `subjectId`, `availability` (`available`/`unavailable`), `format` (`CAPA`/`BROCHURA`/`ESPIRAL`), `sort` (`newest` [padrão]/`oldest`/`title`), `includeArchived` (bool).
 
 `POST/PUT /books` — corpo:
 
@@ -79,8 +79,8 @@ Query de `GET /books`: `search` (título, subtítulo, ISBN, editora, autor), `ca
   "physicalLocation": "Estante A",
   "availableCopies": 3,
   "acquisitionType": "COMPRA",
-  "categoryIds": [3],
-  "categoryNames": ["Ficção científica"],
+  "subjectIds": [3],
+  "subjectNames": ["Ficção científica"],
   "authorIds": [1, 2],
   "authorNames": ["Machado de Assis"],
   "knowledgeAreaIds": [1],
@@ -89,7 +89,7 @@ Query de `GET /books`: `search` (título, subtítulo, ISBN, editora, autor), `ca
 ```
 
 - `authorNames` cria autores novos ao salvar (find-or-create case-insensitive); nomes existentes são reutilizados.
-- `categoryIds`/`categoryNames` seguem o mesmo padrão (livro pode ter N categorias — relação `BookCategory`).
+- `subjectIds`/`subjectNames` seguem o mesmo padrão (livro pode ter N assuntos — relação `BookSubject`).
 - `knowledgeAreaIds`/`knowledgeAreaNames` seguem o mesmo padrão (livro pode ter N áreas de conhecimento — relação `BookKnowledgeArea`).
 - `format`: `CAPA`, `BROCHURA` ou `ESPIRAL` (validado por Zod; armazenado como String).
 - `acquisitionType`: `COMPRA`, `DOACAO`, `REPOSICAO`, `PRODUCAO_INTERNA`, `TROCA`, `EMPRESTIMO_BIBLIOTECAS`, `LICITACAO`, `PERMUTA` ou `CONVENIO`.
@@ -112,14 +112,14 @@ Query de `GET /books`: `search` (título, subtítulo, ISBN, editora, autor), `ca
 | PUT | `/api/authors/:id` | Atualiza `{ name, isActive? }` |
 | PATCH | `/api/authors/:id/status` | `{ isActive: boolean }` — desativa/ativa |
 
-## Categories
+## Subjects — leitura pública
 
 | Método | Rota | Auth | Descrição |
 |---|---|---|---|
-| GET | `/api/categories` | — | Ativas por padrão; `?all=1` inclui inativas (exige auth) |
-| POST | `/api/categories` | ADMIN | Cria `{ name, description? }` |
-| PUT | `/api/categories/:id` | ADMIN | Atualiza `{ name, description? }` |
-| PATCH | `/api/categories/:id/status` | ADMIN | `{ status: 'ACTIVE' | 'INACTIVE' }` |
+| GET | `/api/subjects` | — | Ativas por padrão; `?all=1` inclui inativas (exige auth) |
+| POST | `/api/subjects` | ADMIN | Cria `{ name, description? }` |
+| PUT | `/api/subjects/:id` | ADMIN | Atualiza `{ name, description? }` |
+| PATCH | `/api/subjects/:id/status` | ADMIN | `{ status: 'ACTIVE' | 'INACTIVE' }` |
 
 ## Readers — autenticação
 
@@ -201,11 +201,11 @@ O Termo de Empréstimo contém: dados do empréstimo, leitor (snapshots), materi
 | GET | `/api/reports` | Resultado `{ type, generatedAt, filters, columns, rows }` |
 | GET | `/api/reports/export` | Mesmos filtros; baixa CSV (`;` como separador, BOM UTF-8) |
 
-Parâmetros: `type` (obrigatório) + `start`, `end`, `categoryId`, `bookId`, `readerId`, `limit` (1–100, padrão 10).
+Parâmetros: `type` (obrigatório) + `start`, `end`, `subjectId`, `bookId`, `readerId`, `limit` (1–100, padrão 10).
 
 | `type` | Colunas |
 |---|---|
-| `acervo` | Métrica/Valor (livros, arquivados, disponíveis, emprestados, categorias, autores) |
+| `acervo` | Métrica/Valor (livros, arquivados, disponíveis, emprestados, assuntos, autores) |
 | `available` | Título/ISBN (livros disponíveis) |
 | `loaned` | Título/ISBN (livros emprestados) |
 | `overdue` | Empréstimo/Leitor/Livro/Devido em |
@@ -213,7 +213,7 @@ Parâmetros: `type` (obrigatório) + `start`, `end`, `categoryId`, `bookId`, `re
 | `returns-period` | Empréstimo/Leitor/Livro/Devolvido em (filtro por `returnedAt`) |
 | `active-readers` | Leitor/CPF/Empréstimos no período |
 | `top-books` | Livro/ISBN/Empréstimos |
-| `categories` | Categoria/Empréstimos |
+| `subjects` | Assunto/Empréstimos |
 
 ## Audit — `ADMIN` apenas
 
@@ -266,8 +266,8 @@ O frontend (`features/api.ts`) expõe chamadas para rotas que **não existem** n
 | Chamada do frontend | Rota real no backend |
 |---|---|
 | `PATCH /authors/:id/deactivate` e `…/reactivate` | `PATCH /authors/:id/status` `{ isActive }` |
-| `PATCH /categories/:id/deactivate` e `…/reactivate` | `PATCH /categories/:id/status` `{ status }` |
+| `PATCH /subjects/:id/deactivate` e `…/reactivate` | `PATCH /subjects/:id/status` `{ status }` |
 | `PATCH /users/:id/deactivate` e `…/reactivate` | Não existe; usar `PUT /users/:id` com `status` |
 | `PATCH /reservations/:id/cancel` e `…/fulfill` | `POST /reservations/:id/cancel` e `POST /reservations/:id/fulfill` |
 
-Impacto: os toggles de ativar/desativar usuários, autores e categorias nas telas de admin, e as ações de cancelar/atender reserva na tela Reservas, falham com 404 se acionados. A documentação acima reflete a API real do backend.
+Impacto: os toggles de ativar/desativar usuários, autores e assuntos nas telas de admin, e as ações de cancelar/atender reserva na tela Reservas, falham com 404 se acionados. A documentação acima reflete a API real do backend.

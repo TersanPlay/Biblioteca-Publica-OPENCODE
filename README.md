@@ -277,7 +277,7 @@ cd frontend && npm run build
 
 ## Notas
 
-- IDs das entidades são strings geradas pelo Appwrite (`$id`); relacionamentos (autores, categorias, áreas de conhecimento) são armazenados como arrays de ids/nomes nos documentos.
+- IDs das entidades são strings geradas pelo Appwrite (`$id`); relacionamentos (autores, assuntos, áreas de conhecimento) são armazenados como arrays de ids/nomes nos documentos.
 - Em empréstimos, dados do leitor/livro/usuário são salvos como snapshots no momento do registro para os Termos PDF.
 - A autenticação das credenciais fica no Appwrite Auth; o backend mantém apenas os metadados de `role`/`status` na collection `users` e emite um JWT de sessão própria.
 - `format` e `acquisitionType` são strings validadas por Zod na borda da API (sem enums nativos no Appwrite).

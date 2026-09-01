@@ -7,7 +7,7 @@ import type {
   Book,
   BookFormValues,
   BookRef,
-  Category,
+  Subject,
   DashboardData,
   LibrarySettings,
   Loan,
@@ -51,8 +51,8 @@ function toBookPayload(v: BookFormValues) {
     physicalLocation: v.physicalLocation,
     availableCopies: v.availableCopies ? Number(v.availableCopies) : undefined,
     acquisitionType: v.acquisitionType || undefined,
-    categoryIds: v.categories.filter((c) => c.id != null).map((c) => c.id as string),
-    categoryNames: v.categories.filter((c) => c.id == null).map((c) => c.name),
+    subjectIds: v.subjects.filter((s) => s.id != null).map((s) => s.id as string),
+    subjectNames: v.subjects.filter((s) => s.id == null).map((s) => s.name),
     authorIds: v.authors.filter((a) => a.id != null).map((a) => a.id as string),
     authorNames: v.authors.filter((a) => a.id == null).map((a) => a.name),
     knowledgeAreaIds: v.knowledgeAreas.filter((k) => k.id != null).map((k) => k.id as string),
@@ -68,7 +68,7 @@ export const booksApi = {
     api.put<Book>(`/books/${id}`, toBookPayload(v)).then((r) => r.data),
   archive: (id: string) => api.delete(`/books/${id}`).then((r) => r.data),
   restore: (id: string) => api.patch(`/books/${id}/restore`).then((r) => r.data),
-  cover: (isbn: string) =>
+  cover: (isbn: string, signal?: AbortSignal) =>
     api
       .get<{
         coverUrl: string;
@@ -80,13 +80,14 @@ export const booksApi = {
         publicationYear: number | null;
         pages: number | null;
         authors: string[];
-        categories: string[];
-      }>('/books/cover', { params: { isbn } })
+        subjects: string[];
+      }>('/books/cover', { params: { isbn }, signal })
       .then((r) => r.data),
-  exists: (isbn: string, excludeId?: string) =>
+  exists: (isbn: string, excludeId?: string, signal?: AbortSignal) =>
     api
       .get<{ book: BookRef | null }>('/books/exists', {
         params: { isbn, ...(excludeId ? { exclude: excludeId } : {}) },
+        signal,
       })
       .then((r) => r.data),
 };
@@ -101,18 +102,18 @@ export const authorsApi = {
   reactivate: (id: string) => api.patch(`/authors/${id}/status`, { isActive: true }).then((r) => r.data),
 };
 
-export const categoriesApi = {
-  list: (params?: Params) => api.get<Paginated<Category>>('/categories', { params }).then((r) => r.data),
+export const subjectsApi = {
+  list: (params?: Params) => api.get<Paginated<Subject>>('/subjects', { params }).then((r) => r.data),
   all: (includeInactive = false) =>
     api
-      .get<Paginated<Category>>('/categories', { params: includeInactive ? { all: 1 } : {} })
+      .get<Paginated<Subject>>('/subjects', { params: includeInactive ? { all: 1 } : {} })
       .then((r) => r.data.items),
   create: (v: { name: string; description?: string }) =>
-    api.post<Category>('/categories', v).then((r) => r.data),
+    api.post<Subject>('/subjects', v).then((r) => r.data),
   update: (id: string, v: { name: string; description?: string }) =>
-    api.put<Category>(`/categories/${id}`, v).then((r) => r.data),
-  deactivate: (id: string) => api.patch(`/categories/${id}/status`, { status: 'INACTIVE' }).then((r) => r.data),
-  reactivate: (id: string) => api.patch(`/categories/${id}/status`, { status: 'ACTIVE' }).then((r) => r.data),
+    api.put<Subject>(`/subjects/${id}`, v).then((r) => r.data),
+  deactivate: (id: string) => api.patch(`/subjects/${id}/status`, { status: 'INACTIVE' }).then((r) => r.data),
+  reactivate: (id: string) => api.patch(`/subjects/${id}/status`, { status: 'ACTIVE' }).then((r) => r.data),
 };
 
 export const knowledgeAreasApi = {

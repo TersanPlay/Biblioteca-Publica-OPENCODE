@@ -22,7 +22,7 @@ interface ReportResult {
 
 function buildResult(type: string, req: Request, columns: string[], rows: Row[]): ReportResult {
   const filters: Record<string, unknown> = {};
-  for (const key of ['start', 'end', 'categoryId', 'bookId', 'readerId', 'limit']) {
+  for (const key of ['start', 'end', 'subjectId', 'bookId', 'readerId', 'limit']) {
     const v = (req.query as Record<string, unknown>)[key];
     if (v) filters[key] = v;
   }
@@ -58,10 +58,10 @@ async function computeReport(req: Request): Promise<ReportResult> {
   let rows: Row[];
 
   if (q.type === 'acervo') {
-    const [allBooks, allLoans, categoriesRes, authorsRes] = await Promise.all([
+    const [allBooks, allLoans, subjectsRes, authorsRes] = await Promise.all([
       listDocs(COLLECTIONS.books, { pageSize: 1000 }),
       listDocs(COLLECTIONS.loans, { pageSize: 1000 }),
-      listDocs(COLLECTIONS.categories, { pageSize: 1000 }),
+      listDocs(COLLECTIONS.subjects, { pageSize: 1000 }),
       listDocs(COLLECTIONS.authors, { pageSize: 1000 }),
     ]);
     const totalBooks = allBooks.docs.filter((b) => !b.isArchived).length;
@@ -73,7 +73,7 @@ async function computeReport(req: Request): Promise<ReportResult> {
       ['Livros arquivados', archivedBooks],
       ['Livros disponíveis', Math.max(0, totalBooks - activeLoans)],
       ['Livros emprestados', activeLoans],
-      ['Categorias', categoriesRes.total],
+      ['Assuntos', subjectsRes.total],
       ['Autores', authorsRes.total],
     ];
   } else if (q.type === 'available' || q.type === 'loaned') {
@@ -88,7 +88,7 @@ async function computeReport(req: Request): Promise<ReportResult> {
     let items = booksRes.docs
       .filter((b) => !b.isArchived)
       .filter((b) => {
-        if (q.categoryId && !b.categoryIds?.includes(String(q.categoryId))) return false;
+        if (q.subjectId && !b.subjectIds?.includes(String(q.subjectId))) return false;
         if (q.bookId && b.$id !== String(q.bookId)) return false;
         if (q.type === 'available') return !loanedBookIds.has(b.$id);
         return loanedBookIds.has(b.$id);
@@ -169,26 +169,26 @@ async function computeReport(req: Request): Promise<ReportResult> {
     if (periodStart) filteredLoans = filteredLoans.filter((l) => l.loanDate >= periodStart);
     if (periodEnd) filteredLoans = filteredLoans.filter((l) => l.loanDate <= periodEnd);
     if (q.readerId) filteredLoans = filteredLoans.filter((l) => l.readerId === String(q.readerId));
-    const categoriesRes = await listDocs(COLLECTIONS.categories, { pageSize: 1000 });
-    const categoryMap = new Map(categoriesRes.docs.map((c) => [c.$id, c.name as string]));
-    const byCategory = new Map<string, number>();
+    const subjectsRes = await listDocs(COLLECTIONS.subjects, { pageSize: 1000 });
+    const subjectMap = new Map(subjectsRes.docs.map((c) => [c.$id, c.name as string]));
+    const bySubject = new Map<string, number>();
     const bookIds = [...new Set(filteredLoans.map((l) => l.bookId).filter(Boolean))];
     const bookDocs = await Promise.all(bookIds.map((id) => getDoc(COLLECTIONS.books, id as string)));
     const bookMap = new Map(bookDocs.filter(Boolean).map((b) => [b!.$id, b!]));
     for (const l of filteredLoans) {
       const book = l.bookId ? bookMap.get(l.bookId as string) : null;
-      const categoryIds: string[] = book?.categoryIds ?? [];
-      const names = categoryIds.map((id) => categoryMap.get(id) ?? 'Sem categoria');
+      const subjectIds: string[] = book?.subjectIds ?? [];
+      const names = subjectIds.map((id) => subjectMap.get(id) ?? 'Sem assunto');
       if (names.length === 0) {
-        byCategory.set('Sem categoria', (byCategory.get('Sem categoria') ?? 0) + 1);
+        bySubject.set('Sem assunto', (bySubject.get('Sem assunto') ?? 0) + 1);
       } else {
         for (const name of names) {
-          byCategory.set(name, (byCategory.get(name) ?? 0) + 1);
+          bySubject.set(name, (bySubject.get(name) ?? 0) + 1);
         }
       }
     }
-    const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, q.limit);
-    columns = ['Categoria', 'Empréstimos'];
+    const top = [...bySubject.entries()].sort((a, b) => b[1] - a[1]).slice(0, q.limit);
+    columns = ['Assunto', 'Empréstimos'];
     rows = top.map((r) => [r[0], r[1]]);
   }
 

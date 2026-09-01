@@ -6,12 +6,13 @@ import { HomePage } from '../../pages/public/home';
 import { CatalogPage } from '../../pages/public/catalog';
 import { BookDetailsPage } from '../../pages/public/book-details';
 import { ArchitecturePage } from '../../pages/public/architecture';
+import { CddPage } from '../../pages/public/cdd';
 import { LoginPage } from '../../pages/auth/login';
 import { DashboardPage } from '../../pages/admin/dashboard';
 import { BooksPage } from '../../pages/admin/books';
 import { BookFormPage } from '../../pages/admin/book-form';
 import { AuthorsPage } from '../../pages/admin/authors';
-import { CategoriesPage } from '../../pages/admin/categories';
+import { SubjectsPage } from '../../pages/admin/subjects';
 import { ReadersPage } from '../../pages/admin/readers';
 import { ReaderDetailsPage } from '../../pages/admin/reader-details';
 import { LoansPage } from '../../pages/admin/loans';
@@ -34,6 +35,7 @@ export function AppRoutes() {
         <Route path="catalogo" element={<CatalogPage />} />
         <Route path="livros/:id" element={<BookDetailsPage />} />
         <Route path="arquitetura" element={<ArchitecturePage />} />
+        <Route path="indice-cdd" element={<CddPage />} />
       </Route>
       <Route path="login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
@@ -51,7 +53,7 @@ export function AppRoutes() {
           <Route path="admin/blocklist" element={<BlockListPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="admin/autores" element={<AuthorsPage />} />
-            <Route path="admin/categorias" element={<CategoriesPage />} />
+            <Route path="admin/assuntos" element={<SubjectsPage />} />
             <Route path="admin/relatorios" element={<ReportsPage />} />
             <Route path="admin/usuarios" element={<UsersPage />} />
             <Route path="admin/configuracoes" element={<SettingsPage />} />

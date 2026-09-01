@@ -19,7 +19,7 @@ npm run smoke        # npx tsx scripts/smoke.ts
 Cobre **63 casos**, incluindo:
 
 - Login, RBAC (ADMIN × ATTENDANT), token inválido/expirado, rate limit
-- CRUD de livros, autores, categorias, leitores, usuários
+- CRUD de livros, autores, assuntos, leitores, usuários
 - ISBN (validação, duplicado → 409, normalize)
 - Campos expandidos do livro (format, volume, cdd, cutter, physicalLocation, availableCopies, acquisitionType)
 - Áreas de conhecimento (cadastro automático, relação N:N com livros)

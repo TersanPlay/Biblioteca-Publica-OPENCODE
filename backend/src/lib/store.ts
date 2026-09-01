@@ -14,7 +14,7 @@ export const COLLECTIONS = {
   settings: 'settings',
   readers: 'readers',
   authors: 'authors',
-  categories: 'categories',
+  subjects: 'subjects',
   knowledgeAreas: 'knowledgeAreas',
   books: 'books',
   loans: 'loans',

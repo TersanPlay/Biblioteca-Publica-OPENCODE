@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Blocks, BookOpen, CalendarCheck, Clock3, Globe, Library, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Blocks, BookOpen, CalendarCheck, Clock3, Globe, Hash, Library, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { Badge } from '../../components/ui/badge';
@@ -85,23 +85,42 @@ export function HomePage() {
               </Link>
             </div>
           </form>
-          <Link
-            to="/arquitetura"
-            onMouseMove={trackSpotlight}
-            className={cn(shellCls, 'mt-5 inline-block max-w-sm')}
-          >
-            <Spotlight />
-            <span className={cn(coreCls, 'flex items-center gap-4 p-4')}>
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary">
-                <Blocks className="size-5" />
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              to="/arquitetura"
+              onMouseMove={trackSpotlight}
+              className={cn(shellCls, 'inline-block max-w-sm')}
+            >
+              <Spotlight />
+              <span className={cn(coreCls, 'flex items-center gap-4 p-4')}>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-primary-soft text-primary">
+                  <Blocks className="size-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-bold text-ink">Arquitetura do projeto</span>
+                  <span className="block text-[12.5px] text-muted">Veja como o sistema foi construído</span>
+                </span>
+                <ArrowRight className="ml-auto size-4 shrink-0 text-primary transition-transform duration-200 [transition-timing-function:var(--ease)] group-hover:translate-x-1" />
               </span>
-              <span className="min-w-0">
-                <span className="block text-[14px] font-bold text-ink">Arquitetura do projeto</span>
-                <span className="block text-[12.5px] text-muted">Veja como o sistema foi construído</span>
+            </Link>
+            <Link
+              to="/indice-cdd"
+              onMouseMove={trackSpotlight}
+              className={cn(shellCls, 'inline-block max-w-sm')}
+            >
+              <Spotlight />
+              <span className={cn(coreCls, 'flex items-center gap-4 p-4')}>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-gold-soft text-gold">
+                  <Hash className="size-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-bold text-ink">Índice CDD</span>
+                  <span className="block text-[12.5px] text-muted">Classes da Classificação Decimal de Dewey</span>
+                </span>
+                <ArrowRight className="ml-auto size-4 shrink-0 text-gold transition-transform duration-200 [transition-timing-function:var(--ease)] group-hover:translate-x-1" />
               </span>
-              <ArrowRight className="ml-auto size-4 shrink-0 text-primary transition-transform duration-200 [transition-timing-function:var(--ease)] group-hover:translate-x-1" />
-            </span>
-          </Link>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -130,7 +149,7 @@ export function HomePage() {
               </span>
               <span className="relative mt-auto pt-8">
                 <span className="block text-lg font-extrabold leading-tight">
-                  Catálogo por categorias
+                  Catálogo por assuntos
                 </span>
                 <span className="mt-1.5 block text-[13.5px] leading-relaxed text-white/80">
                   Navegue por assunto e descubra o acervo completo da biblioteca, com

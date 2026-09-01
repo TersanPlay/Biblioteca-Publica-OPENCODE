@@ -11,7 +11,7 @@ import { Input } from '../../components/ui/input';
 import { NativeSelect } from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Textarea } from '../../components/ui/textarea';
-import { authorsApi, booksApi, categoriesApi, knowledgeAreasApi } from '../../features/api';
+import { authorsApi, booksApi, subjectsApi, knowledgeAreasApi } from '../../features/api';
 import { useToast } from '../../features/toast/toast-provider';
 import { apiErrorMessage } from '../../lib/errors';
 import { isValidIsbn10, isValidIsbn13 } from '../../lib/isbn';
@@ -20,7 +20,7 @@ import type {
   Book,
   BookFormValues,
   BookRef,
-  Category,
+  Subject,
   KnowledgeArea,
 } from '../../types/api';
 
@@ -81,7 +81,7 @@ const schema = z.object({
     'PERMUTA',
     'CONVENIO',
   ]),
-  categories: z.array(tagValue),
+  subjects: z.array(tagValue),
   authors: z.array(tagValue).min(1, 'Informe ao menos um autor'),
   knowledgeAreas: z.array(tagValue),
 });
@@ -250,7 +250,7 @@ export function BookFormPage() {
 
   const [book, setBook] = useState<Book | null>(null);
   const [authors, setAuthors] = useState<Author[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [knowledgeAreas, setKnowledgeAreas] = useState<KnowledgeArea[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
@@ -264,15 +264,15 @@ export function BookFormPage() {
       edition: '', publicationYear: '', language: 'Português', pages: '', coverUrl: '',
       format: '', volume: '', cdd: '', cutter: '', physicalLocation: '',
       availableCopies: '', acquisitionType: '',
-      categories: [], authors: [], knowledgeAreas: [],
+      subjects: [], authors: [], knowledgeAreas: [],
     },
   });
 
   useEffect(() => {
-    Promise.all([authorsApi.all(), categoriesApi.all(), knowledgeAreasApi.all()])
-      .then(([a, c, k]) => {
+    Promise.all([authorsApi.all(), subjectsApi.all(), knowledgeAreasApi.all()])
+      .then(([a, s, k]) => {
         setAuthors(a);
-        setCategories(c);
+        setSubjects(s);
         setKnowledgeAreas(k);
       })
       .catch(() => undefined);
@@ -303,7 +303,7 @@ export function BookFormPage() {
           physicalLocation: b.physicalLocation ?? '',
           availableCopies: b.availableCopies != null ? String(b.availableCopies) : '',
           acquisitionType: b.acquisitionType ?? '',
-          categories: b.categoryNames.map((name, i) => ({ id: b.categoryIds[i] ?? null, name })),
+          subjects: b.subjectNames.map((name, i) => ({ id: b.subjectIds[i] ?? null, name })),
           authors: b.authorNames.map((name, i) => ({ id: b.authorIds[i] ?? null, name })),
           knowledgeAreas: b.knowledgeAreaNames.map((name, i) => ({ id: b.knowledgeAreaIds[i] ?? null, name })),
         });
@@ -316,23 +316,29 @@ export function BookFormPage() {
   }, [id, isEdit, reset, navigate, toast]);
 
   const authorsField = watch('authors');
-  const categoriesField = watch('categories');
+  const subjectsField = watch('subjects');
   const knowledgeAreasField = watch('knowledgeAreas');
 
   const isbn10 = watch('isbn10');
   const isbn13 = watch('isbn13');
   const coverUrl = watch('coverUrl');
+  const doneCache = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const candidate = [isbn10, isbn13]
       .map((v) => v.trim())
       .find((v) => isValidIsbn10(v) || isValidIsbn13(v));
-    if (!candidate || coverUrl.trim() !== '') return;
-    setCoverState('idle');
+    if (!candidate || coverUrl.trim() !== '') {
+      setCoverState('idle');
+      return;
+    }
+    const controller = new AbortController();
     const timer = setTimeout(() => {
+      if (doneCache.current.has(candidate)) return;
+      doneCache.current.add(candidate);
       setCoverState('searching');
       booksApi
-        .cover(candidate)
+        .cover(candidate, controller.signal)
         .then((info) => {
           if (info.coverUrl && watch('coverUrl').trim() === '') {
             setValue('coverUrl', info.coverUrl);
@@ -364,17 +370,22 @@ export function BookFormPage() {
               info.authors.slice(0, 6).map((name) => ({ id: null as string | null, name })),
             );
           }
-          if (info.categories.length > 0 && watch('categories').length === 0) {
+          if (info.subjects.length > 0 && watch('subjects').length === 0) {
             setValue(
-              'categories',
-              info.categories.slice(0, 4).map((name) => ({ id: null as string | null, name })),
+              'subjects',
+              info.subjects.slice(0, 4).map((name) => ({ id: null as string | null, name })),
             );
           }
           setCoverState('idle');
         })
-        .catch(() => setCoverState('notfound'));
-    }, 900);
-    return () => clearTimeout(timer);
+        .catch(() => {
+          if (!controller.signal.aborted) setCoverState('notfound');
+        });
+    }, 1400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [isbn10, isbn13, coverUrl, setValue]);
 
   useEffect(() => {
@@ -382,6 +393,7 @@ export function BookFormPage() {
       { field: 'isbn10', value: isbn10 },
       { field: 'isbn13', value: isbn13 },
     ];
+    const controller = new AbortController();
     const timer = setTimeout(() => {
       (async () => {
         let found: { field: 'isbn10' | 'isbn13'; book: BookRef } | null = null;
@@ -391,7 +403,7 @@ export function BookFormPage() {
           const valid = item.field === 'isbn10' ? isValidIsbn10(value) : isValidIsbn13(value);
           if (!valid) continue;
           try {
-            const { book } = await booksApi.exists(value, isEdit ? id : undefined);
+            const { book } = await booksApi.exists(value, isEdit ? id : undefined, controller.signal);
             if (book) {
               found = { field: item.field, book };
               break;
@@ -411,7 +423,10 @@ export function BookFormPage() {
         }
       })();
     }, 650);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [isbn10, isbn13, isEdit, id, setError, clearErrors]);
 
   const submit = async (values: BookFormValues) => {
@@ -570,6 +585,23 @@ export function BookFormPage() {
                 onChange={(next) => setValue('knowledgeAreas', next)}
               />
             </div>
+            <TagInputField
+              label="Autores *"
+              helpText="Digite os autores separados por vírgulas. Nomes ainda não cadastrados são criados ao salvar."
+              placeholder="Nome do autor..."
+              options={authors}
+              value={authorsField}
+              onChange={(next) => setValue('authors', next)}
+              error={errors.authors?.message ?? undefined}
+            />
+            <TagInputField
+              label="Assuntos"
+              helpText="Digite os assuntos separados por vírgulas. Assuntos ainda não cadastrados são criados ao salvar."
+              placeholder="Nome do assunto..."
+              options={subjects}
+              value={subjectsField}
+              onChange={(next) => setValue('subjects', next)}
+            />
           </CardContent>
         </Card>
 
@@ -614,29 +646,6 @@ export function BookFormPage() {
                 </p>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <SectionTitle>Vínculos</SectionTitle>
-            <TagInputField
-              label="Autores *"
-              helpText="Digite os autores separados por vírgulas. Nomes ainda não cadastrados são criados ao salvar."
-              placeholder="Nome do autor..."
-              options={authors}
-              value={authorsField}
-              onChange={(next) => setValue('authors', next)}
-              error={errors.authors?.message ?? undefined}
-            />
-            <TagInputField
-              label="Categorias"
-              helpText="Digite as categorias separadas por vírgulas. Categorias ainda não cadastradas são criadas ao salvar."
-              placeholder="Nome da categoria..."
-              options={categories}
-              value={categoriesField}
-              onChange={(next) => setValue('categories', next)}
-            />
           </CardContent>
         </Card>
 

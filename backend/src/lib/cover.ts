@@ -22,7 +22,7 @@ export interface ResolvedBookInfo {
   publicationYear: number | null;
   pages: number | null;
   authors: string[];
-  categories: string[];
+  subjects: string[];
 }
 
 function stripTags(s: string): string {
@@ -132,7 +132,7 @@ export function extractInfo(html: string): ResolvedBookInfo | null {
     publicationYear: yearMatch ? Number(yearMatch[0]) : null,
     pages: pagesMatch ? Number(pagesMatch.match(/\d+/)?.[0]) || null : null,
     authors: extractAuthors(html),
-    categories: [],
+    subjects: [],
   };
 }
 
@@ -214,7 +214,7 @@ async function fetchJson(url: string, timeoutMs: number): Promise<unknown | null
   }
 }
 
-function cleanCategoryList(raw: unknown): string[] {
+function cleanSubjectList(raw: unknown): string[] {
   const list = Array.isArray(raw) ? raw : [];
   const out: string[] = [];
   for (const item of list) {
@@ -225,7 +225,7 @@ function cleanCategoryList(raw: unknown): string[] {
   return out;
 }
 
-export async function resolvePublicCategories(
+export async function resolvePublicSubjects(
   isbn: string,
   title: string | null,
 ): Promise<string[]> {
@@ -239,7 +239,7 @@ export async function resolvePublicCategories(
       const entry = Object.values(json as Record<string, unknown>)[0] as
         | { subjects?: unknown }
         | undefined;
-      return cleanCategoryList(entry?.subjects);
+      return cleanSubjectList(entry?.subjects);
     })(),
     (async () => {
       const json = await fetchJson(
@@ -250,7 +250,7 @@ export async function resolvePublicCategories(
       const items = (json as { items?: unknown[] }).items;
       const categories = (items?.[0] as { volumeInfo?: { categories?: unknown } } | undefined)
         ?.volumeInfo?.categories;
-      return cleanCategoryList(categories);
+      return cleanSubjectList(categories);
     })(),
   ];
   if (title) {
@@ -263,7 +263,7 @@ export async function resolvePublicCategories(
         if (!json || typeof json !== 'object') return [];
         const results = (json as { results?: unknown[] }).results;
         const subjects = (results?.[0] as { subjects?: unknown } | undefined)?.subjects;
-        return cleanCategoryList(subjects);
+        return cleanSubjectList(subjects);
       })(),
     );
   }
@@ -277,6 +277,6 @@ export async function resolvePublicCategories(
 export async function resolveBookMetadata(isbn: string): Promise<ResolvedBookInfo | null> {
   const info = await resolveAmazonCover(isbn);
   if (!info) return null;
-  info.categories = await resolvePublicCategories(isbn, info.title);
+  info.subjects = await resolvePublicSubjects(isbn, info.title);
   return info;
 }

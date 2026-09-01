@@ -16,24 +16,24 @@ import { Input } from '../../components/ui/input';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Textarea } from '../../components/ui/textarea';
-import { categoriesApi } from '../../features/api';
+import { subjectsApi } from '../../features/api';
 import { useAsyncData } from '../../features/hooks/use-async-data';
 import { useApiToast } from '../../features/toast/toast-provider';
 import { apiErrorMessage } from '../../lib/errors';
-import type { Category } from '../../types/api';
+import type { Subject } from '../../types/api';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   description: z.string(),
 });
 
-export function CategoriesPage() {
-  const fetcher = useCallback(() => categoriesApi.all(), []);
+export function SubjectsPage() {
+  const fetcher = useCallback(() => subjectsApi.all(), []);
   const { data, error, loading, refetch } = useAsyncData(fetcher, []);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [toggling, setToggling] = useState<Category | null>(null);
+  const [editing, setEditing] = useState<Subject | null>(null);
+  const [toggling, setToggling] = useState<Subject | null>(null);
   const [busy, setBusy] = useState(false);
   const { toast } = useApiToast();
 
@@ -48,9 +48,9 @@ export function CategoriesPage() {
     setDialogOpen(true);
   };
 
-  const openEdit = (c: Category) => {
-    setEditing(c);
-    reset({ name: c.name, description: c.description ?? '' });
+  const openEdit = (s: Subject) => {
+    setEditing(s);
+    reset({ name: s.name, description: s.description ?? '' });
     setDialogOpen(true);
   };
 
@@ -58,11 +58,11 @@ export function CategoriesPage() {
     setBusy(true);
     try {
       if (editing) {
-        await categoriesApi.update(editing.$id, v);
-        toast.success('Categoria atualizada');
+        await subjectsApi.update(editing.$id, v);
+        toast.success('Assunto atualizado');
       } else {
-        await categoriesApi.create(v);
-        toast.success('Categoria criada');
+        await subjectsApi.create(v);
+        toast.success('Assunto criado');
       }
       setDialogOpen(false);
       refetch();
@@ -77,9 +77,9 @@ export function CategoriesPage() {
     if (!toggling) return;
     setBusy(true);
     try {
-      if (toggling.status === 'ACTIVE') await categoriesApi.deactivate(toggling.$id);
-      else await categoriesApi.reactivate(toggling.$id);
-      toast.success(toggling.status === 'ACTIVE' ? 'Categoria desativada' : 'Categoria reativada');
+      if (toggling.status === 'ACTIVE') await subjectsApi.deactivate(toggling.$id);
+      else await subjectsApi.reactivate(toggling.$id);
+      toast.success(toggling.status === 'ACTIVE' ? 'Assunto desativado' : 'Assunto reativado');
       setToggling(null);
       refetch();
     } catch (err) {
@@ -92,9 +92,9 @@ export function CategoriesPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Categorias"
-        description={`${data?.length ?? 0} categorias organizando o acervo`}
-        actions={<Button onClick={openNew}><Plus className="size-4" /> Nova categoria</Button>}
+        title="Assuntos"
+        description={`${data?.length ?? 0} assuntos organizando o acervo`}
+        actions={<Button onClick={openNew}><Plus className="size-4" /> Novo assunto</Button>}
       />
 
       {error ? (
@@ -109,33 +109,33 @@ export function CategoriesPage() {
         </Card>
       ) : data && data.length === 0 ? (
         <Card variant="soft">
-          <EmptyState title="Nenhuma categoria" action={<Button size="sm" onClick={openNew}>Criar categoria</Button>} />
+          <EmptyState title="Nenhum assunto" action={<Button size="sm" onClick={openNew}>Criar assunto</Button>} />
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.map((c) => (
-            <Card key={c.$id} className="flex items-center justify-between gap-3 p-5">
+          {data?.map((s) => (
+            <Card key={s.$id} className="flex items-center justify-between gap-3 p-5">
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-bold text-ink">{c.name}</p>
-                {c.description && (
-                  <p className="mt-0.5 line-clamp-2 text-[12.5px] text-muted">{c.description}</p>
+                <p className="truncate text-[15px] font-bold text-ink">{s.name}</p>
+                {s.description && (
+                  <p className="mt-0.5 line-clamp-2 text-[12.5px] text-muted">{s.description}</p>
                 )}
                 <p className="mt-1.5 text-[12px] font-semibold text-muted">
-                  {c._count?.books ?? 0} livro{c._count?.books === 1 ? '' : 's'}
+                  {s._count?.books ?? 0} livro{s._count?.books === 1 ? '' : 's'}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">
-                <Badge variant={c.status === 'ACTIVE' ? 'success' : 'neutral'} dot>
-                  {c.status === 'ACTIVE' ? 'Ativa' : 'Inativa'}
+                <Badge variant={s.status === 'ACTIVE' ? 'success' : 'neutral'} dot>
+                  {s.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
                 </Badge>
                 <div className="flex gap-1.5">
-                  <Button variant="secondary" size="sm" onClick={() => openEdit(c)}>Editar</Button>
+                  <Button variant="secondary" size="sm" onClick={() => openEdit(s)}>Editar</Button>
                   <Button
-                    variant={c.status === 'ACTIVE' ? 'ghost' : 'secondary'}
+                    variant={s.status === 'ACTIVE' ? 'ghost' : 'secondary'}
                     size="sm"
-                    onClick={() => setToggling(c)}
+                    onClick={() => setToggling(s)}
                   >
-                    {c.status === 'ACTIVE' ? 'Desativar' : 'Reativar'}
+                    {s.status === 'ACTIVE' ? 'Desativar' : 'Reativar'}
                   </Button>
                 </div>
               </div>
@@ -146,7 +146,7 @@ export function CategoriesPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader title={editing ? 'Editar categoria' : 'Nova categoria'} />
+          <DialogHeader title={editing ? 'Editar assunto' : 'Novo assunto'} />
           <form onSubmit={handleSubmit(submit)}>
             <DialogBody>
               <div>
@@ -155,7 +155,7 @@ export function CategoriesPage() {
               </div>
               <div>
                 <Label>Descrição</Label>
-                <Textarea rows={3} placeholder="Descreva o escopo da categoria..." {...register('description')} />
+                <Textarea rows={3} placeholder="Descreva o escopo do assunto..." {...register('description')} />
               </div>
             </DialogBody>
             <DialogFooter>
@@ -169,10 +169,10 @@ export function CategoriesPage() {
       <ConfirmDialog
         open={!!toggling}
         onOpenChange={(o) => !o && setToggling(null)}
-        title={toggling?.status === 'ACTIVE' ? 'Desativar categoria' : 'Reativar categoria'}
+        title={toggling?.status === 'ACTIVE' ? 'Desativar assunto' : 'Reativar assunto'}
         description={
           toggling?.status === 'ACTIVE'
-            ? `"${toggling?.name}" não poderá ser atribuída a novos livros.`
+            ? `"${toggling?.name}" não poderá ser atribuído a novos livros.`
             : `"${toggling?.name}" voltará a ficar disponível para novos livros.`
         }
         confirmLabel={toggling?.status === 'ACTIVE' ? 'Desativar' : 'Reativar'}

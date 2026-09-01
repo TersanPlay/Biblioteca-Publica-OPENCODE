@@ -8,7 +8,7 @@ const SMOKE_BOOK_PREFIXES = [
   'Livro Sem Auth OK',
   'Livro ISBN Teste',
   'Livro AutorName Smoke',
-  'Livro Categoria Smoke',
+  'Livro Assunto Smoke',
 ];
 const SMOKE_AUTHORS = [
   'Autor Smoke Test',
@@ -17,11 +17,11 @@ const SMOKE_AUTHORS = [
   'Autor Novo Smoke C',
   'Autor Novo Smoke D',
 ];
-const SMOKE_CATEGORIES = [
-  'Categoria Smoke Test',
-  'Categoria Smoke Test B',
-  'Categoria Smoke Test C',
-  'Categoria Smoke Test D',
+const SMOKE_SUBJECTS = [
+  'Assunto Smoke Test',
+  'Assunto Smoke Test B',
+  'Assunto Smoke Test C',
+  'Assunto Smoke Test D',
 ];
 const SMOKE_READER_EMAIL = 'smoke@test.local';
 
@@ -140,13 +140,13 @@ async function main() {
     const attendantToken = r.body?.token;
     r.status === 200 && attendantToken ? ok('login atendente') : fail('login atendente', r);
 
-    r = await j('/api/categories', {
+    r = await j('/api/subjects', {
       method: 'POST',
       headers: auth(adminToken!),
-      body: JSON.stringify({ name: 'Categoria Smoke Test', description: 'Fixture de teste' }),
+      body: JSON.stringify({ name: 'Assunto Smoke Test', description: 'Fixture de teste' }),
     });
-    const categoryId = r.body?.$id;
-    categoryId ? ok('criar categoria fixture') : fail('criar categoria fixture', r);
+    const subjectId = r.body?.$id;
+    subjectId ? ok('criar assunto fixture') : fail('criar assunto fixture', r);
 
     r = await j('/api/authors', {
       method: 'POST',
@@ -165,7 +165,7 @@ async function main() {
         publicationYear: 2024,
         pages: 100,
         language: 'Português',
-        categoryIds: [categoryId],
+        subjectIds: [subjectId],
         authorIds: [authorId],
       }),
     });
@@ -260,7 +260,7 @@ async function main() {
         publicationYear: 2024,
         pages: 90,
         language: 'Português',
-        categoryIds: [categoryId],
+        subjectIds: [subjectId],
         authorIds: [authorId],
       }),
     });
@@ -371,8 +371,8 @@ async function main() {
     r = await j('/api/books', { method: 'POST', headers: auth(attendantToken), body: JSON.stringify({ title: 'Livro Sem Auth OK' }) });
     r.status === 201 ? ok('atendente pode criar livro') : fail('atendente criar livro', r);
 
-    r = await j('/api/categories', { method: 'POST', headers: auth(attendantToken), body: JSON.stringify({ name: 'X' }) });
-    r.status === 403 ? ok('RBAC: atendente sem categorias') : fail('RBAC atendente categorias', r);
+    r = await j('/api/subjects', { method: 'POST', headers: auth(attendantToken), body: JSON.stringify({ name: 'X' }) });
+    r.status === 403 ? ok('RBAC: atendente sem assuntos') : fail('RBAC atendente assuntos', r);
 
     r = await j('/api/books/novo/livro');
     r.status === 404 ? ok('rota inválida → 404') : fail('rota inválida 404', r);
@@ -542,44 +542,44 @@ async function main() {
       method: 'POST',
       headers: auth(adminToken!),
       body: JSON.stringify({
-        title: 'Livro Categoria Smoke A',
+        title: 'Livro Assunto Smoke A',
         isbn13: cnIsbn,
-        categoryNames: ['Categoria Smoke Test B', 'Categoria Smoke Test C'],
+        subjectNames: ['Assunto Smoke Test B', 'Assunto Smoke Test C'],
       }),
     });
     if (r.status === 201) {
       createdBookIds.push(r.body.$id);
       const detailCat = await j('/api/books/' + r.body.$id);
-      const hasB = detailCat.body?.categoryNames?.includes('Categoria Smoke Test B');
-      const hasC = detailCat.body?.categoryNames?.includes('Categoria Smoke Test C');
-      hasB && hasC ? ok('categoryNames com lista cria e vincula todas as categorias') : fail('categoryNames lista', detailCat);
-    } else fail('livro com categorias novas', r);
+      const hasB = detailCat.body?.subjectNames?.includes('Assunto Smoke Test B');
+      const hasC = detailCat.body?.subjectNames?.includes('Assunto Smoke Test C');
+      hasB && hasC ? ok('subjectNames com lista cria e vincula todos os assuntos') : fail('subjectNames lista', detailCat);
+    } else fail('livro com assuntos novos', r);
 
     r = await j('/api/books', {
       method: 'POST',
       headers: auth(adminToken!),
-      body: JSON.stringify({ title: 'Livro Categoria Smoke B', categoryNames: ['X'] }),
+      body: JSON.stringify({ title: 'Livro Assunto Smoke B', subjectNames: ['X'] }),
     });
-    r.status === 400 ? ok('categoryNames rejeita nome muito curto') : fail('categoryNames curto', r);
+    r.status === 400 ? ok('subjectNames rejeita nome muito curto') : fail('subjectNames curto', r);
 
     const cnIsbn2 = genIsbn13('978' + String(Date.now() + 7).slice(-9));
     r = await j('/api/books', {
       method: 'POST',
       headers: auth(adminToken!),
-      body: JSON.stringify({ title: 'Livro Categoria Smoke C', isbn13: cnIsbn2, categoryNames: ['Categoria Smoke Test B'] }),
+      body: JSON.stringify({ title: 'Livro Assunto Smoke C', isbn13: cnIsbn2, subjectNames: ['Assunto Smoke Test B'] }),
     });
     const cnId = r.body?.$id;
-    if (cnId) { ok('livro com categoria nova fixture'); createdBookIds.push(cnId); } else fail('livro categoria nova', r);
+    if (cnId) { ok('livro com assunto novo fixture'); createdBookIds.push(cnId); } else fail('livro assunto novo', r);
     r = await j('/api/books/' + cnId, {
       method: 'PUT',
       headers: auth(adminToken!),
-      body: JSON.stringify({ title: 'Livro Categoria Smoke C', isbn13: cnIsbn2, categoryNames: ['Categoria Smoke Test B', 'Categoria Smoke Test D'] }),
+      body: JSON.stringify({ title: 'Livro Assunto Smoke C', isbn13: cnIsbn2, subjectNames: ['Assunto Smoke Test B', 'Assunto Smoke Test D'] }),
     });
     r.status === 200 &&
-    r.body?.categoryNames?.includes('Categoria Smoke Test B') &&
-    r.body?.categoryNames?.includes('Categoria Smoke Test D')
-      ? ok('edição mantém categoria e adiciona categoria nova')
-      : fail('edição com categoria nova', r);
+    r.body?.subjectNames?.includes('Assunto Smoke Test B') &&
+    r.body?.subjectNames?.includes('Assunto Smoke Test D')
+      ? ok('edição mantém assunto e adiciona assunto novo')
+      : fail('edição com assunto novo', r);
   } catch (err) {
     fail('exceção global', err);
   } finally {
@@ -619,9 +619,9 @@ async function main() {
     for (const a of authors) {
       if (SMOKE_AUTHORS.includes(a.name)) await safeDel(COLLECTIONS.authors, a.$id);
     }
-    const categories = (await listDocs(COLLECTIONS.categories, { pageSize: 1000 })).docs;
-    for (const c of categories) {
-      if (SMOKE_CATEGORIES.includes(c.name)) await safeDel(COLLECTIONS.categories, c.$id);
+    const subjects = (await listDocs(COLLECTIONS.subjects, { pageSize: 1000 })).docs;
+    for (const c of subjects) {
+      if (SMOKE_SUBJECTS.includes(c.name)) await safeDel(COLLECTIONS.subjects, c.$id);
     }
 
     if (attendantUserId) {

@@ -41,7 +41,7 @@ export interface Author {
   _count?: { books: number };
 }
 
-export interface Category {
+export interface Subject {
   $id: string;
   name: string;
   description: string | null;
@@ -90,8 +90,8 @@ export interface Book {
   isArchived: boolean;
   authorIds: string[];
   authorNames: string[];
-  categoryIds: string[];
-  categoryNames: string[];
+  subjectIds: string[];
+  subjectNames: string[];
   knowledgeAreaIds: string[];
   knowledgeAreaNames: string[];
   isAvailable: boolean;
@@ -246,7 +246,7 @@ export type ReportType =
   | 'returns-period'
   | 'active-readers'
   | 'top-books'
-  | 'categories';
+  | 'subjects';
 
 export interface BookRef {
   id: string;
@@ -281,7 +281,7 @@ export interface BookFormValues {
   physicalLocation: string;
   availableCopies: string;
   acquisitionType: string;
-  categories: { id: string | null; name: string }[];
+  subjects: { id: string | null; name: string }[];
   authors: { id: string | null; name: string }[];
   knowledgeAreas: { id: string | null; name: string }[];
 }

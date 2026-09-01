@@ -8,7 +8,7 @@
 | Users | `user.routes.ts` | `/api/users` | ADMIN (módulo inteiro) |
 | Books | `book.routes.ts` | `/api/books` | leitura pública; escrita com auth |
 | Authors | `author.routes.ts` | `/api/authors` | auth |
-| Categories | `category.routes.ts` | `/api/categories` | leitura pública; escrita ADMIN |
+| Subjects | `subject.routes.ts` | `/api/subjects` | leitura pública; escrita ADMIN |
 | Knowledge Areas | `knowledge-area.routes.ts` | `/api/knowledge-areas` | leitura pública |
 | Readers | `reader.routes.ts` | `/api/readers` | auth (DELETE: ADMIN) |
 | Loans | `loan.routes.ts` | `/api/loans` | auth |
@@ -22,7 +22,7 @@
 ### Helpers de domínio
 
 - `loan.routes.ts` — `assertBookEligible` (validação de livro para empréstimo, reutilizada no empréstimo individual e no lote), `ensureNumber` (gera `EMP-000123`), `buildLoanSnapshots` (snapshots de dados do leitor/livro/usuário no momento do empréstimo).
-- `book.routes.ts` — `resolveAuthorNames`, `resolveCategoryNames`, `resolveKnowledgeAreaNames` (find-or-create dentro da transação), `findDuplicateBook`/`duplicateConflict` (ISBN duplicado).
+- `book.routes.ts` — `resolveAuthorNames`, `resolveSubjectNames`, `resolveKnowledgeAreaNames` (find-or-create dentro da transação), `findDuplicateBook`/`duplicateConflict` (ISBN duplicado).
 - `reader.routes.ts` — `DELETE /:id` com anonimização LGPD (substitui dados pessoais, cancela reservas pendentes, bloqueia exclusão se houver empréstimos ativos).
 - `lib/overdue.ts` — `refreshOverdue`, `expireReservations`, `computeDueDate`, `addDays`.
 - `lib/settings.ts` — `getSettings()` (regras + dados institucionais; defaults estruturais sem dados de demonstração).
@@ -37,7 +37,7 @@
 | Rota | Página |
 |---|---|
 | `/` | Home |
-| `/catalogo` | Catálogo de livros (busca, categoria, disponibilidade) |
+| `/catalogo` | Catálogo de livros (busca, assunto, disponibilidade) |
 | `/livros/:id` | Detalhe do livro público |
 | `/arquitetura` | Arquitetura do sistema (visão geral, stack, estrutura, fluxo de dados) |
 
@@ -58,7 +58,7 @@
 | `/admin/leitores/:id` | Detalhe do leitor (editar, bloquear/desbloquear, excluir, histórico) | — |
 | `/admin/blocklist` | Lista de leitores bloqueados (busca, desbloqueio em lote) | — |
 | `/admin/autores` | Autores | `RequireAdmin` |
-| `/admin/categorias` | Categorias | `RequireAdmin` |
+| `/admin/assuntos` | Assuntos | `RequireAdmin` |
 | `/admin/relatorios` | Relatórios (9 tipos + exportar CSV) | `RequireAdmin` |
 | `/admin/usuarios` | Usuários do sistema | `RequireAdmin` |
 | `/admin/configuracoes` | Configurações (limites + dados institucionais) | `RequireAdmin` |
@@ -83,7 +83,7 @@
 Instância axios com `baseURL` = `VITE_API_URL || '/api'`; injeta token do `localStorage` (`livraria_token`) e, em resposta `401` (fora do login), limpa o token e emite `auth:unauthorized` para desconectar a sessão.
 
 ### `src/features/`
-- `api.ts` — clientes por entidade: `booksApi`, `authorsApi`, `categoriesApi`, `knowledgeAreasApi`, `readersApi` (inclui `block`, `unblock`, `unblockBatch`, `setStatus`, `remove`, `blocked`), `loansApi` (inclui `createBatch`), `reservationsApi`, `reportsApi`, `usersApi`, `auditApi`, `settingsApi`, `dashboardApi`, `backupsApi` (inclui `list`, `create`, `download`, `remove`). Payloads limpos (campos vazios removidos); livro converte `BookFormValues` → `{ authorIds, authorNames, categoryIds, categoryNames, knowledgeAreaIds, knowledgeAreaNames }`.
+- `api.ts` — clientes por entidade: `booksApi`, `authorsApi`, `subjectsApi`, `knowledgeAreasApi`, `readersApi` (inclui `block`, `unblock`, `unblockBatch`, `setStatus`, `remove`, `blocked`), `loansApi` (inclui `createBatch`), `reservationsApi`, `reportsApi`, `usersApi`, `auditApi`, `settingsApi`, `dashboardApi`, `backupsApi` (inclui `list`, `create`, `download`, `remove`). Payloads limpos (campos vazios removidos); livro converte `BookFormValues` → `{ authorIds, authorNames, subjectIds, subjectNames, knowledgeAreaIds, knowledgeAreaNames }`.
 - `auth/auth-provider.tsx` — estado de sessão (login/logout, persistência do token).
 - `hooks/use-async-data.ts` — hook genérico para carregamento de dados com loading/error/refetch.
 
@@ -100,4 +100,4 @@ Uma página por rota (ver tabelas acima), em `pages/public/`, `pages/admin/`, `p
 - `pages/admin/blocklist.tsx` — lista de leitores bloqueados com busca e desbloqueio em lote.
 
 ### `src/types/api.ts`
-Tipos das entidades (`Book`, `Loan`, `Reader`, `ReaderDetail`, `BlockedReader`, `Reservation`, `User`, `Category`, `Author`, `KnowledgeArea`, `AuditLog`, `ReportResult`, `LibrarySettings`, `DashboardData`, `Backup`, `Paginated<T>` etc.).
+Tipos das entidades (`Book`, `Loan`, `Reader`, `ReaderDetail`, `BlockedReader`, `Reservation`, `User`, `Subject`, `Author`, `KnowledgeArea`, `AuditLog`, `ReportResult`, `LibrarySettings`, `DashboardData`, `Backup`, `Paginated<T>` etc.).

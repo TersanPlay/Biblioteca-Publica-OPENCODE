@@ -119,8 +119,8 @@ export const bookSchema = z.object({
   language: strOpt,
   pages: intOpt,
   coverUrl: strOpt,
-  categoryIds: z.array(z.string()).default([]),
-  categoryNames: z.array(z.string().trim().min(2, 'nome de categoria muito curto').max(120)).default([]),
+  subjectIds: z.array(z.string()).default([]),
+  subjectNames: z.array(z.string().trim().min(2, 'nome de assunto muito curto').max(120)).default([]),
   authorIds: z.array(z.string()).default([]),
   authorNames: z.array(z.string().trim().min(2, 'nome de autor muito curto').max(120)).default([]),
   format: z.enum(['CAPA', 'BROCHURA', 'ESPIRAL']).optional(),
@@ -146,7 +146,7 @@ export const authorStatusSchema = z.object({
   isActive: z.boolean(),
 });
 
-export const categoryStatusSchema = z.object({
+export const subjectStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE']),
 });
 
@@ -156,7 +156,7 @@ export const readerStatusSchema = z.object({
   category: z.enum(['ATRASO_REPETIDO', 'COMPORTAMENTO', 'SOLICITACAO', 'OUTRO']).optional(),
 });
 
-export const categorySchema = z.object({
+export const subjectSchema = z.object({
   name: z.string().trim().min(2, 'nome obrigatório'),
   description: strOpt,
 });
@@ -221,7 +221,7 @@ export const listQuerySchema = paginationSchema.extend({
 
 export const bookQuerySchema = paginationSchema.extend({
   search: strOpt,
-  categoryId: strOpt,
+  subjectId: strOpt,
   format: z.enum(['CAPA', 'BROCHURA', 'ESPIRAL']).nullish(),
   availability: z.enum(['available', 'unavailable']).nullish(),
   sort: z.enum(['newest', 'oldest', 'title']).default('newest'),
@@ -279,11 +279,11 @@ export const reportQuerySchema = z.object({
     'returns-period',
     'active-readers',
     'top-books',
-    'categories',
+    'subjects',
   ]),
   start: dateStrOpt,
   end: dateStrOpt,
-  categoryId: strOpt,
+  subjectId: strOpt,
   bookId: strOpt,
   readerId: strOpt,
   limit: z.coerce.number().int().min(1).max(100).default(10),

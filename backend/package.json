@@ -9,6 +9,9 @@
     "appwrite:setup": "tsx scripts/setup-appwrite.ts",
     "appwrite:seed": "tsx scripts/seed-appwrite.ts",
     "appwrite:ping": "tsx scripts/appwrite-ping.ts",
+    "appwrite:migrate-subjects": "tsx scripts/migrate-subjects.ts",
+    "appwrite:sync-books-subjects": "tsx scripts/sync-books-subjects.ts",
+    "appwrite:drop-categories": "tsx scripts/drop-categories.ts",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {

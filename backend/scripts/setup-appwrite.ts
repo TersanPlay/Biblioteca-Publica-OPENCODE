@@ -122,12 +122,12 @@ async function main() {
     blockedBy: { kind: 'string', key: 'blockedBy', size: 64, required: false },
   });
 
-  // authors / categories / knowledgeAreas (find-or-create)
+  // authors / subjects / knowledgeAreas (find-or-create)
   await ensureCollection(dbId, 'authors', 'Autores', {
     name: { kind: 'string', key: 'name', size: 200 },
     isActive: { kind: 'boolean', key: 'isActive', required: false },
   });
-  await ensureCollection(dbId, 'categories', 'Categorias', {
+  await ensureCollection(dbId, 'subjects', 'Assuntos', {
     name: { kind: 'string', key: 'name', size: 200 },
     description: { kind: 'string', key: 'description', size: 500, required: false },
     status: { kind: 'string', key: 'status', size: 20 },
@@ -159,8 +159,8 @@ async function main() {
     isArchived: { kind: 'boolean', key: 'isArchived', required: false },
     authorIds: { kind: 'string', key: 'authorIds', size: 2000, required: false, array: true },
     authorNames: { kind: 'string', key: 'authorNames', size: 2000, required: false, array: true },
-    categoryIds: { kind: 'string', key: 'categoryIds', size: 2000, required: false, array: true },
-    categoryNames: { kind: 'string', key: 'categoryNames', size: 2000, required: false, array: true },
+    subjectIds: { kind: 'string', key: 'subjectIds', size: 2000, required: false, array: true },
+    subjectNames: { kind: 'string', key: 'subjectNames', size: 2000, required: false, array: true },
     knowledgeAreaIds: { kind: 'string', key: 'knowledgeAreaIds', size: 2000, required: false, array: true },
     knowledgeAreaNames: { kind: 'string', key: 'knowledgeAreaNames', size: 2000, required: false, array: true },
   });

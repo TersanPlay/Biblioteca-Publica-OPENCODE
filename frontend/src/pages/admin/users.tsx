@@ -228,7 +228,7 @@ export function UsersPage() {
                   ]}
                 />
                 <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-muted">
-                  <UserCog className="size-3.5" /> Atendentes não acessam autoria, categorias, relatórios, usuários nem configurações.
+                  <UserCog className="size-3.5" /> Atendentes não acessam autoria, assuntos, relatórios, usuários nem configurações.
                 </p>
               </div>
             </DialogBody>

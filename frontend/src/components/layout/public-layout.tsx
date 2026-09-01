@@ -171,6 +171,11 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <Link to="/indice-cdd" className="transition-colors hover:text-white">
+                  Índice CDD
+                </Link>
+              </li>
+              <li>
                 <Link to="/login" className="transition-colors hover:text-white">
                   Área da equipe
                 </Link>

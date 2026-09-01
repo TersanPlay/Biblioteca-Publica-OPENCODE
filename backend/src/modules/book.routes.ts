@@ -44,13 +44,13 @@ async function resolveAuthorNames(
   return { ids, created };
 }
 
-async function resolveCategoryNames(
+async function resolveSubjectNames(
   names: string[],
 ): Promise<{ ids: string[]; created: { id: string; name: string }[] }> {
   const ids: string[] = [];
   const created: { id: string; name: string }[] = [];
   if (names.length === 0) return { ids, created };
-  const { docs } = await listDocs(COLLECTIONS.categories, { pageSize: 1000 });
+  const { docs } = await listDocs(COLLECTIONS.subjects, { pageSize: 1000 });
   const nameMap = new Map(docs.map((c) => [c.name.toLowerCase(), c.$id]));
   for (const raw of names) {
     const name = raw.trim();
@@ -60,10 +60,10 @@ async function resolveCategoryNames(
     if (existingId) {
       ids.push(existingId);
     } else {
-      const category = await createDoc(COLLECTIONS.categories, { name, status: 'ACTIVE' });
-      created.push({ id: category.$id, name: category.name });
-      nameMap.set(key, category.$id);
-      ids.push(category.$id);
+      const subject = await createDoc(COLLECTIONS.subjects, { name, status: 'ACTIVE' });
+      created.push({ id: subject.$id, name: subject.name });
+      nameMap.set(key, subject.$id);
+      ids.push(subject.$id);
     }
   }
   return { ids, created };
@@ -95,7 +95,7 @@ async function resolveKnowledgeAreaNames(
 }
 
 async function resolveNames(
-  collection: 'authors' | 'categories' | 'knowledgeAreas',
+  collection: 'authors' | 'subjects' | 'knowledgeAreas',
   ids: string[],
 ): Promise<Map<string, string>> {
   const { docs } = await listDocs(COLLECTIONS[collection], { pageSize: 1000 });
@@ -169,7 +169,7 @@ function matchesSearch(book: Doc, search: string): boolean {
 }
 
 async function buildNamesMap(
-  collection: 'authors' | 'categories' | 'knowledgeAreas',
+  collection: 'authors' | 'subjects' | 'knowledgeAreas',
   ids: string[],
 ): Promise<string[]> {
   if (ids.length === 0) return [];
@@ -192,9 +192,9 @@ bookRouter.get(
 
     let filtered = allBooks.filter((b) => {
       if (!q.includeArchived && b.isArchived !== false) return false;
-      if (q.categoryId) {
-        const catIdStr = String(q.categoryId);
-        if (!Array.isArray(b.categoryIds) || !b.categoryIds.includes(catIdStr)) return false;
+      if (q.subjectId) {
+        const catIdStr = String(q.subjectId);
+        if (!Array.isArray(b.subjectIds) || !b.subjectIds.includes(catIdStr)) return false;
       }
       if (q.format && b.format !== q.format) return false;
       if (search && !matchesSearch(b, search)) return false;
@@ -294,7 +294,7 @@ bookRouter.post(
     }
 
     const createdAuthors: { id: string; name: string }[] = [];
-    const createdCategories: { id: string; name: string }[] = [];
+    const createdSubjects: { id: string; name: string }[] = [];
     const createdKnowledgeAreas: { id: string; name: string }[] = [];
 
     let authorIds: string[] = [];
@@ -304,11 +304,11 @@ bookRouter.post(
       createdAuthors.push(...resolved.created);
     }
 
-    let categoryIds: string[] = [];
-    if (data.categoryIds.length > 0 || data.categoryNames.length > 0) {
-      const resolved = await resolveCategoryNames(data.categoryNames);
-      categoryIds = [...new Set([...data.categoryIds.map(String), ...resolved.ids])];
-      createdCategories.push(...resolved.created);
+    let subjectIds: string[] = [];
+    if (data.subjectIds.length > 0 || data.subjectNames.length > 0) {
+      const resolved = await resolveSubjectNames(data.subjectNames);
+      subjectIds = [...new Set([...data.subjectIds.map(String), ...resolved.ids])];
+      createdSubjects.push(...resolved.created);
     }
 
     let knowledgeAreaIds: string[] = [];
@@ -319,7 +319,7 @@ bookRouter.post(
     }
 
     const authorNames = await buildNamesMap('authors', authorIds);
-    const catNames = await buildNamesMap('categories', categoryIds);
+    const subNames = await buildNamesMap('subjects', subjectIds);
     const kaNames = await buildNamesMap('knowledgeAreas', knowledgeAreaIds);
 
     const book = await createDoc(COLLECTIONS.books, {
@@ -344,8 +344,8 @@ bookRouter.post(
       isArchived: false,
       authorIds,
       authorNames,
-      categoryIds,
-      categoryNames: catNames,
+      subjectIds,
+      subjectNames: subNames,
       knowledgeAreaIds,
       knowledgeAreaNames: kaNames,
     });
@@ -353,8 +353,8 @@ bookRouter.post(
     for (const a of createdAuthors) {
       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
     }
-    for (const c of createdCategories) {
-      await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+    for (const s of createdSubjects) {
+      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
     }
     for (const k of createdKnowledgeAreas) {
       await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);
@@ -381,16 +381,16 @@ bookRouter.put(
     }
 
     const createdAuthors: { id: string; name: string }[] = [];
-    const createdCategories: { id: string; name: string }[] = [];
+    const createdSubjects: { id: string; name: string }[] = [];
     const createdKnowledgeAreas: { id: string; name: string }[] = [];
 
     const resolved = await resolveAuthorNames(data.authorNames);
     const authorIds = [...new Set([...data.authorIds.map(String), ...resolved.ids])];
     createdAuthors.push(...resolved.created);
 
-    const resolvedCategories = await resolveCategoryNames(data.categoryNames);
-    const categoryIds = [...new Set([...data.categoryIds.map(String), ...resolvedCategories.ids])];
-    createdCategories.push(...resolvedCategories.created);
+    const resolvedSubjects = await resolveSubjectNames(data.subjectNames);
+    const subjectIds = [...new Set([...data.subjectIds.map(String), ...resolvedSubjects.ids])];
+    createdSubjects.push(...resolvedSubjects.created);
 
     const resolvedKnowledgeAreas = await resolveKnowledgeAreaNames(data.knowledgeAreaNames);
     const knowledgeAreaIds = [
@@ -399,7 +399,7 @@ bookRouter.put(
     createdKnowledgeAreas.push(...resolvedKnowledgeAreas.created);
 
     const authorNames = await buildNamesMap('authors', authorIds);
-    const catNames = await buildNamesMap('categories', categoryIds);
+    const subNames = await buildNamesMap('subjects', subjectIds);
     const kaNames = await buildNamesMap('knowledgeAreas', knowledgeAreaIds);
 
     const updated = await updateDoc(COLLECTIONS.books, id, {
@@ -423,8 +423,8 @@ bookRouter.put(
       acquisitionType: cleanNull(data.acquisitionType),
       authorIds,
       authorNames,
-      categoryIds,
-      categoryNames: catNames,
+      subjectIds,
+      subjectNames: subNames,
       knowledgeAreaIds,
       knowledgeAreaNames: kaNames,
     });
@@ -432,8 +432,8 @@ bookRouter.put(
     for (const a of createdAuthors) {
       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
     }
-    for (const c of createdCategories) {
-      await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+    for (const s of createdSubjects) {
+      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
     }
     for (const k of createdKnowledgeAreas) {
       await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);

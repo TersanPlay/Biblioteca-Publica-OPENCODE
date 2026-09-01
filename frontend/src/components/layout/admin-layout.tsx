@@ -48,7 +48,7 @@ const navSections: {
     items: [
       { to: '/admin/livros', label: 'Livros', icon: BookMarked, adminOnly: false },
       { to: '/admin/autores', label: 'Autores', icon: Users, adminOnly: true },
-      { to: '/admin/categorias', label: 'Categorias', icon: ClipboardList, adminOnly: true },
+      { to: '/admin/assuntos', label: 'Assuntos', icon: ClipboardList, adminOnly: true },
     ],
   },
   {

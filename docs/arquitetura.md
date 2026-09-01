@@ -118,15 +118,15 @@ frontend/
 
 | Papel | Acesso |
 |---|---|
-| `ADMIN` | Tudo: dashboard, livros, empréstimos, devoluções, reservas, leitores, autores, categorias, relatórios, usuários, configurações, auditoria, backup |
-| `ATTENDANT` | Dashboard, livros, empréstimos, devoluções, reservas, leitores, autores (consulta/criação), blocklist — **sem** usuários, relatórios, configurações, auditoria, categorias (escrita), backup |
+| `ADMIN` | Tudo: dashboard, livros, empréstimos, devoluções, reservas, leitores, autores, assuntos, relatórios, usuários, configurações, auditoria, backup |
+| `ATTENDANT` | Dashboard, livros, empréstimos, devoluções, reservas, leitores, autores (consulta/criação), blocklist — **sem** usuários, relatórios, configurações, auditoria, assuntos (escrita), backup |
 
-Aplicação no backend: `requireRoles('ADMIN')` em users, categories (escrita), reports, audit, settings (PUT), reader DELETE. No frontend: guarda `RequireAdmin` envolve essas rotas.
+Aplicação no backend: `requireRoles('ADMIN')` em users, subjects (escrita), reports, audit, settings (PUT), reader DELETE. No frontend: guarda `RequireAdmin` envolve essas rotas.
 
 ## Auditoria
 
 - `writeAudit(userId, action, entity, entityId, metadata, ip)` grava um documento na collection `auditLogs`; falha de escrita não derruba a operação (log de erro).
-- Ações registradas: `LOGIN`, `LOGOUT`, `LOGIN_FAILED`, `USER_CREATED`, `USER_UPDATED`, `USER_PASSWORD_RESET`, `BOOK_CREATED`, `BOOK_UPDATED`, `BOOK_ARCHIVED`, `BOOK_RESTORED`, `AUTHOR_CREATED`, `AUTHOR_UPDATED`, `AUTHOR_ACTIVATED`, `AUTHOR_INACTIVATED`, `CATEGORY_CREATED`, `CATEGORY_UPDATED`, `CATEGORY_STATUS_CHANGED`, `READER_CREATED`, `READER_UPDATED`, `READER_STATUS_CHANGED`, `READER_DELETED`, `LOAN_CREATED`, `LOAN_RETURNED`, `LOAN_RENEWED`, `RESERVATION_CREATED`, `RESERVATION_CANCELLED`, `RESERVATION_FULFILLED`, `SETTINGS_UPDATED`.
+- Ações registradas: `LOGIN`, `LOGOUT`, `LOGIN_FAILED`, `USER_CREATED`, `USER_UPDATED`, `USER_PASSWORD_RESET`, `BOOK_CREATED`, `BOOK_UPDATED`, `BOOK_ARCHIVED`, `BOOK_RESTORED`, `AUTHOR_CREATED`, `AUTHOR_UPDATED`, `AUTHOR_ACTIVATED`, `AUTHOR_INACTIVATED`, `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_STATUS_CHANGED`, `READER_CREATED`, `READER_UPDATED`, `READER_STATUS_CHANGED`, `READER_DELETED`, `LOAN_CREATED`, `LOAN_RETURNED`, `LOAN_RENEWED`, `RESERVATION_CREATED`, `RESERVATION_CANCELLED`, `RESERVATION_FULFILLED`, `SETTINGS_UPDATED`.
 - Consulta: `GET /api/audit` (ADMIN) com filtros por ação, usuário e período.
 
 ## Backups
@@ -198,7 +198,7 @@ VITE_API_URL=http://localhost:3333/api   # opcional; padrão '/api' (proxy)
 ## Notas
 
 - IDs das entidades são strings geradas pelo Appwrite (`$id`); relacionamentos usam estes IDs.
-- Dados desnormalizados: em empréstimos, autores/categorias/áreas dos livros e snapshots de leitor são armazenados inline no documento (ex.: `readerNameSnapshot`, `bookTitleSnapshot`, `authorNames`, `categoryNames`).
-- Comparação de nomes de autores/categorias/áreas para reaproveitamento é case-insensitive e feita em memória/na borda (normalização antes de consultar).
+- Dados desnormalizados: em empréstimos, autores/assuntos/áreas dos livros e snapshots de leitor são armazenados inline no documento (ex.: `readerNameSnapshot`, `bookTitleSnapshot`, `authorNames`, `subjectNames`).
+- Comparação de nomes de autores/assuntos/áreas para reaproveitamento é case-insensitive e feita em memória/na borda (normalização antes de consultar).
 - `format` e `acquisitionType` são strings validadas por Zod na borda da API (sem enums nativos no Appwrite).
 - `requireAuth` consulta a collection `users` a cada requisição (usuário deve existir e estar `ACTIVE`).

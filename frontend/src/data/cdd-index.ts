@@ -1,0 +1,1989 @@
+// CDD - Classificacao Decimal de Dewey (indice de catalogacao).
+// Fonte: docs/indice para Catalogacao - CDD.json
+
+export interface CddSubclass {
+  codigo: string;
+  descricao: string;
+}
+
+export interface CddClass {
+  codigo: string;
+  descricao: string;
+  subclasses: CddSubclass[];
+}
+
+export const cddIndex: CddClass[] = [
+  {
+    "codigo": "000",
+    "descricao": "Generalidades",
+    "subclasses": [
+      {
+        "codigo": "001",
+        "descricao": "Conhecimento / Teoria"
+      },
+      {
+        "codigo": "001.4",
+        "descricao": "Métodos de estudo / Metodologia / Pesquisa"
+      },
+      {
+        "codigo": "001.42",
+        "descricao": "Pesquisa científica"
+      },
+      {
+        "codigo": "001.94",
+        "descricao": "Mistérios e fatos misteriosos / Pirâmides : mistérios, poderes"
+      },
+      {
+        "codigo": "001.942",
+        "descricao": "Discos voadores / Óvnis, etc"
+      },
+      {
+        "codigo": "001.944",
+        "descricao": "Monstros e temas relacionados"
+      },
+      {
+        "codigo": "002",
+        "descricao": "O Livro"
+      },
+      {
+        "codigo": "003",
+        "descricao": "Sistemas"
+      },
+      {
+        "codigo": "004",
+        "descricao": "Ciência da computação"
+      },
+      {
+        "codigo": "004.03",
+        "descricao": "Dicionário de computação"
+      },
+      {
+        "codigo": "004.07",
+        "descricao": "Computação – Estudo e ensino"
+      },
+      {
+        "codigo": "004.678",
+        "descricao": "Internet"
+      },
+      {
+        "codigo": "005",
+        "descricao": "Programação de computadores"
+      },
+      {
+        "codigo": "006",
+        "descricao": "Métodos especiais de computação"
+      },
+      {
+        "codigo": "010",
+        "descricao": "Bibliografias"
+      },
+      {
+        "codigo": "011",
+        "descricao": "Bibliografias gerais"
+      },
+      {
+        "codigo": "012",
+        "descricao": "Bibliografias e catálogos individuais"
+      },
+      {
+        "codigo": "013",
+        "descricao": "Bibliografias e catálogos de autores por classes específicas (por local de residência, por assunto, etc.)"
+      },
+      {
+        "codigo": "014",
+        "descricao": "Bibliografias e catálogos de trabalhos anônimos ou com pseudônimos"
+      },
+      {
+        "codigo": "015",
+        "descricao": "Bibliografia e catálogos de trabalhos de lugares específicos"
+      },
+      {
+        "codigo": "016",
+        "descricao": "Bibliografia e catálogo de trabalhos de assuntos específicos"
+      },
+      {
+        "codigo": "016.981 1",
+        "descricao": "Bibliografia de BH"
+      },
+      {
+        "codigo": "017",
+        "descricao": "Catálogos de bibliotecas privadas, públicas, leilões, vendas"
+      },
+      {
+        "codigo": "018",
+        "descricao": "Catálogos arranjados por autor, assunto, data, registro, etc."
+      },
+      {
+        "codigo": "019",
+        "descricao": "Catálogos dicionário / Arquivos e técnicas de arquivo"
+      },
+      {
+        "codigo": "020",
+        "descricao": "Biblioteca e ciência da informação / Livro, história, impressão"
+      },
+      {
+        "codigo": "021",
+        "descricao": "Conexão, relacionamento entre bibliotecas, arquivos e centros de informação"
+      },
+      {
+        "codigo": "022",
+        "descricao": "Administração de planta física (prédios, iluminação, ventilação, aquecimento, ar condicionado, equipamento, mobiliário)"
+      },
+      {
+        "codigo": "023",
+        "descricao": "Administração de pessoal"
+      },
+      {
+        "codigo": "025",
+        "descricao": "Operações e rotinas de bibliotecas, arquivos e centros de informação / Documentação"
+      },
+      {
+        "codigo": "025.1",
+        "descricao": "Administração"
+      },
+      {
+        "codigo": "025.2",
+        "descricao": "Aquisição e desenvolvimento da coleção"
+      },
+      {
+        "codigo": "025.3",
+        "descricao": "Análise bibliográfica e controle (catalogação, classificação, indexação e armazenamento da informação)"
+      },
+      {
+        "codigo": "025.4",
+        "descricao": "Análises de assuntos e controle (CDD / CDU / Library of Congress Classification / Bliss’s Bibliografic Classification / Ranganathan’s Colon Classification)"
+      },
+      {
+        "codigo": "025.5",
+        "descricao": "Serviços aos usuários (Referência / Serviços de informação / Disseminação seletiva da informação / Informação cooperativa / Atendimento aos leitores / Instrução de uso e orientação bibliográfica)"
+      },
+      {
+        "codigo": "025.6",
+        "descricao": "Serviços de circulação interna e com outras bibliotecas"
+      },
+      {
+        "codigo": "025.7",
+        "descricao": "Preparação e armazenamento / Conservação e restauração"
+      },
+      {
+        "codigo": "025.8",
+        "descricao": "Manutenção e preservação das coleções (Organização das coleções, segurança e preservação do acervo)"
+      },
+      {
+        "codigo": "026",
+        "descricao": "Bibliotecas, arquivos, centros de informação voltados para assuntos específicos"
+      },
+      {
+        "codigo": "027",
+        "descricao": "Bibliotecas, arquivos e centros de informação em geral"
+      },
+      {
+        "codigo": "027.1",
+        "descricao": "Bibliotecas familiares e privadas"
+      },
+      {
+        "codigo": "027.2",
+        "descricao": "Bibliotecas semi-privadas"
+      },
+      {
+        "codigo": "027.3",
+        "descricao": "Bibliotecas comerciais"
+      },
+      {
+        "codigo": "027.4",
+        "descricao": "Bibliotecas públicas"
+      },
+      {
+        "codigo": "027.5",
+        "descricao": "Bibliotecas governamentais"
+      },
+      {
+        "codigo": "027.6",
+        "descricao": "Bibliotecas para grupos ou organizações específicas"
+      },
+      {
+        "codigo": "027.7",
+        "descricao": "Bibliotecas colegiais e universitárias"
+      },
+      {
+        "codigo": "027.8",
+        "descricao": "Bibliotecas escolares"
+      },
+      {
+        "codigo": "028",
+        "descricao": "Uso de outros meios de informação"
+      },
+      {
+        "codigo": "028.5",
+        "descricao": "Literatura infanto-juvenil"
+      },
+      {
+        "codigo": "030",
+        "descricao": "Enciclopédias gerais"
+      },
+      {
+        "codigo": "031",
+        "descricao": "Americanas"
+      },
+      {
+        "codigo": "032",
+        "descricao": "Inglesas"
+      },
+      {
+        "codigo": "033",
+        "descricao": "Alemãs"
+      },
+      {
+        "codigo": "034",
+        "descricao": "Francesas"
+      },
+      {
+        "codigo": "035",
+        "descricao": "Italianas"
+      },
+      {
+        "codigo": "036",
+        "descricao": "Espanholas e portuguesas"
+      },
+      {
+        "codigo": "036.1",
+        "descricao": "Enciclopédias em espanhol"
+      },
+      {
+        "codigo": "036.9",
+        "descricao": "Almanaques / Livros do ano / Livros de fatos variados / Livros de curiosidades / Guinness / Enciclopédias gerais em português R"
+      },
+      {
+        "codigo": "036.981",
+        "descricao": "Brasileiras"
+      },
+      {
+        "codigo": "037",
+        "descricao": "Línguas eslavas"
+      },
+      {
+        "codigo": "038",
+        "descricao": "Línguas escandinavas"
+      },
+      {
+        "codigo": "039",
+        "descricao": "Outras línguas"
+      },
+      {
+        "codigo": "050",
+        "descricao": "Publicações seriadas"
+      },
+      {
+        "codigo": "060",
+        "descricao": "Organizações gerais (academias, fundações, associações, conferências, congressos)"
+      },
+      {
+        "codigo": "069",
+        "descricao": "Museologia"
+      },
+      {
+        "codigo": "069.1",
+        "descricao": "Serviços de organização do acervo"
+      },
+      {
+        "codigo": "069.132",
+        "descricao": "Acervo"
+      },
+      {
+        "codigo": "069.15",
+        "descricao": "Programas educacionais, incluindo leituras, aulas e viagens"
+      },
+      {
+        "codigo": "069.16",
+        "descricao": "Programas recreativos (programas musicais, apresentações teatrais)"
+      },
+      {
+        "codigo": "069.17",
+        "descricao": "Serviços especiais para deficientes"
+      },
+      {
+        "codigo": "069.2",
+        "descricao": "Organização da planta física (localização, planejamento do prédio, salas especiais, sistemas de comunicação, luz, ventilação, etc)"
+      },
+      {
+        "codigo": "069.3",
+        "descricao": "Equipamentos, mobiliário, audiovisual"
+      },
+      {
+        "codigo": "069.4",
+        "descricao": "Preparação das coleções do museu"
+      },
+      {
+        "codigo": "069.5",
+        "descricao": "Exposições e exibições do acervo"
+      },
+      {
+        "codigo": "070",
+        "descricao": "Documentários, mídia educacional, jornalismo e publicidade"
+      },
+      {
+        "codigo": "070.4",
+        "descricao": "Jornalismo"
+      },
+      {
+        "codigo": "070.403",
+        "descricao": "Dicionários de jornalismo"
+      },
+      {
+        "codigo": "080",
+        "descricao": "Coleções gerais: ensaios, entrevistas, endereços, etc."
+      },
+      {
+        "codigo": "090",
+        "descricao": "Manuscritos, livros raros e outros tipos de materiais raros"
+      },
+      {
+        "codigo": "091",
+        "descricao": "Manuscritos"
+      },
+      {
+        "codigo": "092",
+        "descricao": "Livros manuscritos"
+      },
+      {
+        "codigo": "093",
+        "descricao": "Incunábulos"
+      },
+      {
+        "codigo": "094",
+        "descricao": "Livros impressos (Primeiras impressões, edições especiais)"
+      },
+      {
+        "codigo": "095",
+        "descricao": "Livros com encadernações raras"
+      },
+      {
+        "codigo": "096",
+        "descricao": "Livros notáveis pelas ilustrações ou materiais com que foram confeccionados"
+      },
+      {
+        "codigo": "097",
+        "descricao": "Livros notáveis pela origem ou por seus proprietários"
+      },
+      {
+        "codigo": "098",
+        "descricao": "Trabalhos proibidos (ou pela religião ou pelo governo), Falsificações"
+      },
+      {
+        "codigo": "099",
+        "descricao": "Livros famosos pelo formato"
+      }
+    ]
+  },
+  {
+    "codigo": "100",
+    "descricao": "Filosofia",
+    "subclasses": [
+      {
+        "codigo": "101",
+        "descricao": "História, fundamentos e teoria"
+      },
+      {
+        "codigo": "102",
+        "descricao": "Miscelânea"
+      },
+      {
+        "codigo": "103",
+        "descricao": "Dicionários e enciclopédias de filosofia"
+      },
+      {
+        "codigo": "104",
+        "descricao": "Tópicos especiais"
+      },
+      {
+        "codigo": "105",
+        "descricao": "Publicações seriadas"
+      },
+      {
+        "codigo": "106",
+        "descricao": "Organização e desenvolvimento"
+      },
+      {
+        "codigo": "107",
+        "descricao": "Ensino da filosofia / Educação e pesquisa"
+      },
+      {
+        "codigo": "109",
+        "descricao": "História da filosofia"
+      },
+      {
+        "codigo": "110",
+        "descricao": "Metafísica"
+      },
+      {
+        "codigo": "111",
+        "descricao": "Existência / Realidade (essência, substância, universalidade, finito e infinito, propriedades do \"ser\": unidade, bondade e maldade, beleza)"
+      },
+      {
+        "codigo": "113",
+        "descricao": "Cosmologia (filosofia da natureza, da vida)"
+      },
+      {
+        "codigo": "114",
+        "descricao": "Espaço"
+      },
+      {
+        "codigo": "115",
+        "descricao": "Tempo"
+      },
+      {
+        "codigo": "116",
+        "descricao": "Escolha"
+      },
+      {
+        "codigo": "117",
+        "descricao": "Estrutura"
+      },
+      {
+        "codigo": "118",
+        "descricao": "Força e energia"
+      },
+      {
+        "codigo": "119",
+        "descricao": "Número e quantidade"
+      },
+      {
+        "codigo": "120",
+        "descricao": "Epistemologia, gênero humano, causalidade"
+      },
+      {
+        "codigo": "121",
+        "descricao": "Epistemologia (teoria do conhecimento)"
+      },
+      {
+        "codigo": "121.2",
+        "descricao": "Possibilidade e limite do conhecimento"
+      },
+      {
+        "codigo": "121.3",
+        "descricao": "Origem, significado do conhecimento (percepção e sensação)"
+      },
+      {
+        "codigo": "121.4",
+        "descricao": "Estrutura do conhecimento"
+      },
+      {
+        "codigo": "121.5",
+        "descricao": "Dúvida e negação"
+      },
+      {
+        "codigo": "121.6",
+        "descricao": "Natureza da indagação (certeza, probabilidade, evidência, critério significado, interpretação, hermenêutica)"
+      },
+      {
+        "codigo": "121.7",
+        "descricao": "Crença"
+      },
+      {
+        "codigo": "121.8",
+        "descricao": "Valores / Teoria dos valores"
+      },
+      {
+        "codigo": "122",
+        "descricao": "Causalidade"
+      },
+      {
+        "codigo": "123",
+        "descricao": "Determinismo e indeterminismo (contingência)"
+      },
+      {
+        "codigo": "123.3",
+        "descricao": "Probabilidade, possibilidade, oportunidade"
+      },
+      {
+        "codigo": "123.5",
+        "descricao": "Liberdade"
+      },
+      {
+        "codigo": "123.7",
+        "descricao": "Necessidade"
+      },
+      {
+        "codigo": "124",
+        "descricao": "Teleologia"
+      },
+      {
+        "codigo": "126",
+        "descricao": "Ego (personalidade, consciência)"
+      },
+      {
+        "codigo": "127",
+        "descricao": "Inconsciência, subconsciência"
+      },
+      {
+        "codigo": "128",
+        "descricao": "Gênero humano"
+      },
+      {
+        "codigo": "128.1",
+        "descricao": "Alma"
+      },
+      {
+        "codigo": "128.2",
+        "descricao": "Mente, pensamento"
+      },
+      {
+        "codigo": "128.3",
+        "descricao": "Atributos e faculdades (razão, racionalidade, emoção, vontade)"
+      },
+      {
+        "codigo": "128.4",
+        "descricao": "Ações humanas e experiências - Antropologia filosófica"
+      },
+      {
+        "codigo": "128.46",
+        "descricao": "Amor"
+      },
+      {
+        "codigo": "128.5",
+        "descricao": "Morte"
+      },
+      {
+        "codigo": "128.6",
+        "descricao": "Corpo"
+      },
+      {
+        "codigo": "129",
+        "descricao": "Origem e destino da alma (imortalidade, encarnação, reencarnação)"
+      },
+      {
+        "codigo": "130",
+        "descricao": "Fenômenos paranormais"
+      },
+      {
+        "codigo": "131",
+        "descricao": "Parapsicologia e métodos ocultos para conseguir bem-estar, felicidade e sucesso"
+      },
+      {
+        "codigo": "132",
+        "descricao": "Psiquiatria alternativa"
+      },
+      {
+        "codigo": "133",
+        "descricao": "Parapsicologia e ocultismo (Magia, símbolos, aparições, adivinhações, numerologia, demonologia, feitiçaria)"
+      },
+      {
+        "codigo": "133.5",
+        "descricao": "Astrologia"
+      },
+      {
+        "codigo": "133.54",
+        "descricao": "Horóscopo"
+      },
+      {
+        "codigo": "133.6",
+        "descricao": "Quiromancia"
+      },
+      {
+        "codigo": "133.8",
+        "descricao": "Fenômenos físicos (telepatia, clarividência, premonição, hipnose, magnetismo animal, percepção de animais, aura)"
+      },
+      {
+        "codigo": "133.9",
+        "descricao": "Espiritismo / Espiritualismo (Mediunidade, reencarnação, levitação, materialização)"
+      },
+      {
+        "codigo": "133.93",
+        "descricao": "Obras psicografadas"
+      },
+      {
+        "codigo": "135",
+        "descricao": "Sonhos e mistérios (Cabalismo, Rosacruz, Hermetismo)"
+      },
+      {
+        "codigo": "137",
+        "descricao": "Psicografia"
+      },
+      {
+        "codigo": "140",
+        "descricao": "Escolas filosóficas específicas"
+      },
+      {
+        "codigo": "141",
+        "descricao": "Idealismo"
+      },
+      {
+        "codigo": "141.2",
+        "descricao": "Platonismo"
+      },
+      {
+        "codigo": "141.3",
+        "descricao": "Transcendentalismo"
+      },
+      {
+        "codigo": "141.4",
+        "descricao": "Individualismo"
+      },
+      {
+        "codigo": "141.5",
+        "descricao": "Personalismo"
+      },
+      {
+        "codigo": "141.6",
+        "descricao": "Romancismo"
+      },
+      {
+        "codigo": "142",
+        "descricao": "Filosofia crítica (Kantinismo, fenomenologia)"
+      },
+      {
+        "codigo": "142.78",
+        "descricao": "Existencialismo"
+      },
+      {
+        "codigo": "143",
+        "descricao": "Bergsonismo e intuicionismo"
+      },
+      {
+        "codigo": "144",
+        "descricao": "Humanismo (Pragmatismo, instrumentalismo, utilitarismo)"
+      },
+      {
+        "codigo": "145",
+        "descricao": "Sensacionalismo"
+      },
+      {
+        "codigo": "146",
+        "descricao": "Naturalismo"
+      },
+      {
+        "codigo": "146.3",
+        "descricao": "Materialismo"
+      },
+      {
+        "codigo": "146.4",
+        "descricao": "Positivismo (Contismo, empiricismo, atomismo, mecanismo, evolucionismo)"
+      },
+      {
+        "codigo": "147",
+        "descricao": "Panteísmo"
+      },
+      {
+        "codigo": "148",
+        "descricao": "Dogmatismo, ecleticismo, liberalismo, sincretismo, tradicionalismo"
+      },
+      {
+        "codigo": "149",
+        "descricao": "Outros sistemas filosóficos : Construtivismo, objetivismo, relativismo"
+      },
+      {
+        "codigo": "149.1",
+        "descricao": "Nominalismo e Conceptualismo"
+      },
+      {
+        "codigo": "149.2",
+        "descricao": "Realismo"
+      },
+      {
+        "codigo": "149.3",
+        "descricao": "Misticismo"
+      },
+      {
+        "codigo": "149.5",
+        "descricao": "Otimismo"
+      },
+      {
+        "codigo": "149.6",
+        "descricao": "Pessimismo"
+      },
+      {
+        "codigo": "149.7",
+        "descricao": "Racionalismo (Agnosticismo)"
+      },
+      {
+        "codigo": "149.8",
+        "descricao": "Niilismo"
+      },
+      {
+        "codigo": "149.9",
+        "descricao": "Outros : Estruturalismo, Pós-modernismo"
+      },
+      {
+        "codigo": "150",
+        "descricao": "Psicologia"
+      },
+      {
+        "codigo": "150.1",
+        "descricao": "Teoria e filosofia"
+      },
+      {
+        "codigo": "150.195",
+        "descricao": "Sistemas psicoanalíticos / Psicoanálise"
+      },
+      {
+        "codigo": "150.195 2",
+        "descricao": "Sistema Freudiano"
+      },
+      {
+        "codigo": "150.195 3",
+        "descricao": "Sistema Adleriano"
+      },
+      {
+        "codigo": "150.195 4",
+        "descricao": "Sistema Jungiano"
+      },
+      {
+        "codigo": "150.195 7",
+        "descricao": "Sistema Neopsicoanalítico"
+      },
+      {
+        "codigo": "150.198",
+        "descricao": "Outros"
+      },
+      {
+        "codigo": "150.287",
+        "descricao": "Testes"
+      },
+      {
+        "codigo": "150.3",
+        "descricao": "Dicionário de psicologia"
+      },
+      {
+        "codigo": "150.7",
+        "descricao": "Psicologia – Estudo e ensino"
+      },
+      {
+        "codigo": "150.724",
+        "descricao": "Pesquisas experimentais"
+      },
+      {
+        "codigo": "152.1",
+        "descricao": "Percepção sensorial"
+      },
+      {
+        "codigo": "152.3",
+        "descricao": "Movimentos e função motora (reflexo, coordenação, locomoção)"
+      },
+      {
+        "codigo": "152.4",
+        "descricao": "Emoções e sentimentos"
+      },
+      {
+        "codigo": "152.41",
+        "descricao": "Amor e afeição"
+      },
+      {
+        "codigo": "152.42",
+        "descricao": "Prazer, felicidade, alegria"
+      },
+      {
+        "codigo": "152.43",
+        "descricao": "Humor"
+      },
+      {
+        "codigo": "152.46",
+        "descricao": "Medo / ansiedade / preocupação"
+      },
+      {
+        "codigo": "152.47",
+        "descricao": "Raiva, frustração, agressão"
+      },
+      {
+        "codigo": "152.48",
+        "descricao": "Ciúme, inveja"
+      },
+      {
+        "codigo": "153",
+        "descricao": "Processos mentais e inteligência / Psicologia cognitiva"
+      },
+      {
+        "codigo": "153.1",
+        "descricao": "Memória e aprendizagem"
+      },
+      {
+        "codigo": "153.2",
+        "descricao": "Formação e associação de idéias"
+      },
+      {
+        "codigo": "153.3",
+        "descricao": "Imaginação e criatividade"
+      },
+      {
+        "codigo": "153.4",
+        "descricao": "Intuição, pensamento, valor, julgamento"
+      },
+      {
+        "codigo": "153.42",
+        "descricao": "Pensamento"
+      },
+      {
+        "codigo": "153.43",
+        "descricao": "Raciocínio"
+      },
+      {
+        "codigo": "153.44",
+        "descricao": "Intuição"
+      },
+      {
+        "codigo": "153.45",
+        "descricao": "Valor"
+      },
+      {
+        "codigo": "153.46",
+        "descricao": "Julgamento"
+      },
+      {
+        "codigo": "153.6",
+        "descricao": "Comunicação"
+      },
+      {
+        "codigo": "153.7",
+        "descricao": "Percepção"
+      },
+      {
+        "codigo": "153.8",
+        "descricao": "Vontade, força de vontade"
+      },
+      {
+        "codigo": "153.9",
+        "descricao": "Inteligência e atitudes"
+      },
+      {
+        "codigo": "153.93",
+        "descricao": "Testes de inteligência e personalidade"
+      },
+      {
+        "codigo": "153.94",
+        "descricao": "Testes de aptidão e vocacionais"
+      },
+      {
+        "codigo": "154",
+        "descricao": "Subconsciente e estados e processos alterados"
+      },
+      {
+        "codigo": "154.2",
+        "descricao": "Subconsciente (Id, Ego e Superego)"
+      },
+      {
+        "codigo": "154.3",
+        "descricao": "Sonhos, fantasias, devaneios"
+      },
+      {
+        "codigo": "154.4",
+        "descricao": "Estados alterados da consciência (por uso de drogas, alucinações)"
+      },
+      {
+        "codigo": "154.6",
+        "descricao": "Fenômenos do sono"
+      },
+      {
+        "codigo": "154.63",
+        "descricao": "Sonhos"
+      },
+      {
+        "codigo": "154.64",
+        "descricao": "Sonambulismo"
+      },
+      {
+        "codigo": "154.7",
+        "descricao": "Hipnotismo"
+      },
+      {
+        "codigo": "155",
+        "descricao": "Psicologia diferencial"
+      },
+      {
+        "codigo": "155.2",
+        "descricao": "Psicologia individual / Personalidade"
+      },
+      {
+        "codigo": "155.22",
+        "descricao": "Diferenças individuais"
+      },
+      {
+        "codigo": "155.23",
+        "descricao": "Traços determinantes de caráter ou personalidade (altruísmo, dependência, extroversão, introversão, julgamento moral, perfeccionismo, etc.)"
+      },
+      {
+        "codigo": "155.24",
+        "descricao": "Adaptação e ajustamento (atitudes em relação ao outro e a si)"
+      },
+      {
+        "codigo": "155.25",
+        "descricao": "Desenvolvimento e modificação de caráter e personalidade (maturidade, controle próprio, etc.)"
+      },
+      {
+        "codigo": "155.3",
+        "descricao": "Psicologia sexual"
+      },
+      {
+        "codigo": "155.4",
+        "descricao": "Psicologia infantil / do desenvolvimento"
+      },
+      {
+        "codigo": "155.413",
+        "descricao": "Processos mentais / Inteligência"
+      },
+      {
+        "codigo": "155.45",
+        "descricao": "Crianças excepcionais"
+      },
+      {
+        "codigo": "155.5",
+        "descricao": "Psicologia do adolescente"
+      },
+      {
+        "codigo": "155.6",
+        "descricao": "Psicologia do adulto"
+      },
+      {
+        "codigo": "155.632",
+        "descricao": "Homens"
+      },
+      {
+        "codigo": "155.633",
+        "descricao": "Mulheres"
+      },
+      {
+        "codigo": "155.7",
+        "descricao": "Psicologia evolutiva / Evolução da mentalidade / Comportamento genético"
+      },
+      {
+        "codigo": "155.8",
+        "descricao": "Étnico-psicologia e psicologia nacional"
+      },
+      {
+        "codigo": "155.9",
+        "descricao": "Psicologia – Influencia do ambiente"
+      },
+      {
+        "codigo": "155.904",
+        "descricao": "Stress"
+      },
+      {
+        "codigo": "155.91",
+        "descricao": "Influência de acontecimentos e condições físicas (estímulos sensoriais, doenças, desfiguramentos, etc)"
+      },
+      {
+        "codigo": "155.92",
+        "descricao": "Influência de acontecimentos sociais"
+      },
+      {
+        "codigo": "155.93",
+        "descricao": "Influência de situações específicas (divorcio, catástrofes, acidentes)"
+      },
+      {
+        "codigo": "155.937",
+        "descricao": "Psicologia – influencia da morte"
+      },
+      {
+        "codigo": "155.94",
+        "descricao": "Influência da comunidade ou de casa (comunidades rurais, urbanas)"
+      },
+      {
+        "codigo": "155.95",
+        "descricao": "Influência dos vestuários / Moda, história / evolução das roupas"
+      },
+      {
+        "codigo": "155.96",
+        "descricao": "Influência de acontecimentos restritivos como prisões, vida subterrânea, vida marinha/submarinha e vida aérea/espacial"
+      },
+      {
+        "codigo": "156",
+        "descricao": "Psicologia comparada"
+      },
+      {
+        "codigo": "158",
+        "descricao": "Psicologia aplicada"
+      },
+      {
+        "codigo": "158.1",
+        "descricao": "do Comportamento / Auto ajuda / Aperfeiçoamento pessoal / Equilíbrio pessoal"
+      },
+      {
+        "codigo": "158.125",
+        "descricao": "Meditação transcendental"
+      },
+      {
+        "codigo": "158.128",
+        "descricao": "Meditação"
+      },
+      {
+        "codigo": "158.2",
+        "descricao": "Relações humanas / Valores éticos (amizade, cooperação, diálogo, respeito, responsabilidade, etc.)"
+      },
+      {
+        "codigo": "158.3",
+        "descricao": "Aconselhamento psicológico"
+      },
+      {
+        "codigo": "158.4",
+        "descricao": "Chefia"
+      },
+      {
+        "codigo": "158.5",
+        "descricao": "Negociação"
+      },
+      {
+        "codigo": "158.6",
+        "descricao": "Interesse vocacional – Orientação vocacional"
+      },
+      {
+        "codigo": "158.7",
+        "descricao": "Psicologia industrial (Stress do trabalho)"
+      },
+      {
+        "codigo": "158.9",
+        "descricao": "Sistemas e escolas de psicologia aplicada"
+      },
+      {
+        "codigo": "160",
+        "descricao": "Lógica / Dialética"
+      },
+      {
+        "codigo": "161",
+        "descricao": "Indução"
+      },
+      {
+        "codigo": "162",
+        "descricao": "Dedução"
+      },
+      {
+        "codigo": "165",
+        "descricao": "Enganos e origem do erro / Contradição / Ficção e paradoxos"
+      },
+      {
+        "codigo": "166",
+        "descricao": "Silogismo"
+      },
+      {
+        "codigo": "167",
+        "descricao": "Hipóteses"
+      },
+      {
+        "codigo": "168",
+        "descricao": "Argumento e persuasão"
+      },
+      {
+        "codigo": "169",
+        "descricao": "Analogia"
+      },
+      {
+        "codigo": "170",
+        "descricao": "Ética / Moral"
+      },
+      {
+        "codigo": "171",
+        "descricao": "Sistemas éticos"
+      },
+      {
+        "codigo": "172",
+        "descricao": "Ética política"
+      },
+      {
+        "codigo": "173",
+        "descricao": "Ética familiar"
+      },
+      {
+        "codigo": "174",
+        "descricao": "Ética profissional / Ocupacional"
+      },
+      {
+        "codigo": "174.1",
+        "descricao": "Clero"
+      },
+      {
+        "codigo": "174.2",
+        "descricao": "Médico"
+      },
+      {
+        "codigo": "174.25",
+        "descricao": "Projeto Genoma – aspectos morais e éticos"
+      },
+      {
+        "codigo": "174.3",
+        "descricao": "Advogado"
+      },
+      {
+        "codigo": "174.4",
+        "descricao": "Negócios"
+      },
+      {
+        "codigo": "174.9",
+        "descricao": "Outras profissões"
+      },
+      {
+        "codigo": "175",
+        "descricao": "Ética da comunicação e recreação"
+      },
+      {
+        "codigo": "176",
+        "descricao": "Ética no sexo e reprodução (prostituição, pornografia e obscenidade, inclusive na literatura)"
+      },
+      {
+        "codigo": "177",
+        "descricao": "Ética nas relações sociais / Ética social / Fofocas"
+      },
+      {
+        "codigo": "177.1",
+        "descricao": "Cortesia, hospitalidade, polidez"
+      },
+      {
+        "codigo": "177.2",
+        "descricao": "Conversação"
+      },
+      {
+        "codigo": "177.3",
+        "descricao": "Verdade, mentira, bajulação, calúnia"
+      },
+      {
+        "codigo": "177.4",
+        "descricao": "Aparência pessoal"
+      },
+      {
+        "codigo": "177.5",
+        "descricao": "Escravidão e trabalho forçado"
+      },
+      {
+        "codigo": "177.6",
+        "descricao": "Amor / Amizade"
+      },
+      {
+        "codigo": "178",
+        "descricao": "Ética no consumo (abstinência, gula, álcool, tabaco, drogas)"
+      },
+      {
+        "codigo": "179",
+        "descricao": "Outras (classificar aqui crueldade)"
+      },
+      {
+        "codigo": "179.1",
+        "descricao": "Respeito pela vida e natureza"
+      },
+      {
+        "codigo": "179.2",
+        "descricao": "Tratamento à criança"
+      },
+      {
+        "codigo": "179.3",
+        "descricao": "Tratamento aos animais"
+      },
+      {
+        "codigo": "179.4",
+        "descricao": "Experiências com animais"
+      },
+      {
+        "codigo": "179.5",
+        "descricao": "Blasfêmia, profanação, obscenidade"
+      },
+      {
+        "codigo": "179.6",
+        "descricao": "Coragem, covardia"
+      },
+      {
+        "codigo": "179.7",
+        "descricao": "Respeito e desrespeito à vida humana (genocídio, homicídio, suicídio, pena de morte, duelo, eutanásia)"
+      },
+      {
+        "codigo": "179.8",
+        "descricao": "Vícios, faltas e defeitos (ira, fraude, cobiça, inveja, ódio, aversão, ciúme, desconfiança, orgulho, vaidade e preguiça)"
+      },
+      {
+        "codigo": "179.9",
+        "descricao": "Virtudes / Valores (alegria, gentileza, gratidão, honestidade, humildade, modéstia, paciência, prudência, autocontrole, autoconfiança, tolerância) Caráter"
+      },
+      {
+        "codigo": "180",
+        "descricao": "Filosofias antiga, medieval e ocidental"
+      },
+      {
+        "codigo": "181",
+        "descricao": "Filosofia oriental (Leste e sul da Ásia, China e Coreia, Japão, Egito, Palestina, Israel, Índia, Irã, Iraque, Síria e Líbano, Arábia)"
+      },
+      {
+        "codigo": "181.45",
+        "descricao": "Yoga"
+      },
+      {
+        "codigo": "182",
+        "descricao": "Filosofia grega pré-Sócrates"
+      },
+      {
+        "codigo": "183",
+        "descricao": "Filosofia grega"
+      },
+      {
+        "codigo": "183.2",
+        "descricao": "Filosofia de Sócrates"
+      },
+      {
+        "codigo": "184",
+        "descricao": "Filosofia de Platão"
+      },
+      {
+        "codigo": "185",
+        "descricao": "Filosofia de Aristóteles"
+      },
+      {
+        "codigo": "186",
+        "descricao": "Filosofia séptica e neoplatônica"
+      },
+      {
+        "codigo": "187",
+        "descricao": "Filosofia epicurista"
+      },
+      {
+        "codigo": "188",
+        "descricao": "Filosofia estóica"
+      },
+      {
+        "codigo": "189",
+        "descricao": "Filosofia medieval ocidental"
+      },
+      {
+        "codigo": "190",
+        "descricao": "Filosofia ocidental moderna"
+      },
+      {
+        "codigo": "191",
+        "descricao": "Filosofia americana e canadense"
+      },
+      {
+        "codigo": "192",
+        "descricao": "Filosofia inglesa"
+      },
+      {
+        "codigo": "193",
+        "descricao": "Filosofia austríaca e alemã (Schopenhauer, ...)"
+      },
+      {
+        "codigo": "194",
+        "descricao": "Filosofia francesa (Rousseau, Jean-Jacques...)"
+      },
+      {
+        "codigo": "195",
+        "descricao": "Filosofia italiana"
+      },
+      {
+        "codigo": "196",
+        "descricao": "Filosofia espanhola e portuguesa"
+      },
+      {
+        "codigo": "197",
+        "descricao": "Filosofia russa e países soviéticos"
+      },
+      {
+        "codigo": "198",
+        "descricao": "Filosofia escandinava"
+      },
+      {
+        "codigo": "199",
+        "descricao": "Outras"
+      }
+    ]
+  },
+  {
+    "codigo": "200",
+    "descricao": "Religião",
+    "subclasses": [
+      {
+        "codigo": "200.1",
+        "descricao": "Valores, princípios"
+      },
+      {
+        "codigo": "200.3",
+        "descricao": "Dicionários e enciclopédias de religiões"
+      },
+      {
+        "codigo": "200.19",
+        "descricao": "Psicologia religiosa"
+      },
+      {
+        "codigo": "200.71",
+        "descricao": "Educação"
+      },
+      {
+        "codigo": "200.9",
+        "descricao": "História – Atlas Bíblico"
+      },
+      {
+        "codigo": "210",
+        "descricao": "Filosofia e teoria da religião"
+      },
+      {
+        "codigo": "211",
+        "descricao": "Conceitos de Deus / Fé (classificar aqui trabalhos sobre Deus e a Fé) (Panteísmo, Teísmo, Racionalismo, Deísmo, Humanismo, Agnosticismo)"
+      },
+      {
+        "codigo": "211.8",
+        "descricao": "Ateísmo"
+      },
+      {
+        "codigo": "212",
+        "descricao": "Existência, conhecimento e atributos de Deus"
+      },
+      {
+        "codigo": "213",
+        "descricao": "Criação e evolução do homem"
+      },
+      {
+        "codigo": "215",
+        "descricao": "Ciência e religião"
+      },
+      {
+        "codigo": "218",
+        "descricao": "Gênero humano (incluindo imortalidade)"
+      },
+      {
+        "codigo": "220",
+        "descricao": "Bíblia"
+      },
+      {
+        "codigo": "220.7",
+        "descricao": "Estudo da Bíblia"
+      },
+      {
+        "codigo": "220.9",
+        "descricao": "Bíblia – Atlas histórico / Descrição e geografia bíblicas"
+      },
+      {
+        "codigo": "220.93",
+        "descricao": "Arqueologia bíblica"
+      },
+      {
+        "codigo": "221",
+        "descricao": "Antigo Testamento"
+      },
+      {
+        "codigo": "222",
+        "descricao": "Livros históricos do AT (Pentateuco, Gênesis, Êxodo, Levítico, Números, Deuteronômio, Josué, Juizes, Rute, Samuel, Reis, Crônicas, Esdras, Neemias, Ester)"
+      },
+      {
+        "codigo": "223",
+        "descricao": "Livros poéticos do AT (Jó, Eclesiastes)"
+      },
+      {
+        "codigo": "223.2",
+        "descricao": "Salmos"
+      },
+      {
+        "codigo": "223.7",
+        "descricao": "Provérbios"
+      },
+      {
+        "codigo": "223.9",
+        "descricao": "Cantos de Salomão (Cântico dos Cânticos)"
+      },
+      {
+        "codigo": "224",
+        "descricao": "Livros proféticos do AT (Isaías, Geremias, Lamentações, Esequiel, Daniel, Oséias, Joel, Amós, Profetas Menores)"
+      },
+      {
+        "codigo": "225",
+        "descricao": "Novo Testamento"
+      },
+      {
+        "codigo": "226",
+        "descricao": "Evangelhos e Atos dos Apóstolos"
+      },
+      {
+        "codigo": "226.2",
+        "descricao": "Evangelho de Mateus"
+      },
+      {
+        "codigo": "226.3",
+        "descricao": "de Marcos"
+      },
+      {
+        "codigo": "226.4",
+        "descricao": "de Lucas"
+      },
+      {
+        "codigo": "226.5",
+        "descricao": "de João"
+      },
+      {
+        "codigo": "226.6",
+        "descricao": "Atos dos Apóstolos"
+      },
+      {
+        "codigo": "226.7",
+        "descricao": "Milagres"
+      },
+      {
+        "codigo": "226.8",
+        "descricao": "Parábolas"
+      },
+      {
+        "codigo": "226.9",
+        "descricao": "Sermão da Montanha"
+      },
+      {
+        "codigo": "226.96",
+        "descricao": "Pai Nosso"
+      },
+      {
+        "codigo": "227",
+        "descricao": "Epístolas"
+      },
+      {
+        "codigo": "227.1",
+        "descricao": "Aos Romanos"
+      },
+      {
+        "codigo": "227.2",
+        "descricao": "Aos Coríntios I"
+      },
+      {
+        "codigo": "227.3",
+        "descricao": "Aos Coríntios II"
+      },
+      {
+        "codigo": "227.4",
+        "descricao": "Aos Gálatas"
+      },
+      {
+        "codigo": "227.5",
+        "descricao": "Aos Efésios"
+      },
+      {
+        "codigo": "227.6",
+        "descricao": "Aos Filipenses"
+      },
+      {
+        "codigo": "227.7",
+        "descricao": "Aos Colossences"
+      },
+      {
+        "codigo": "227.8",
+        "descricao": "Outras epístolas de São Paulo"
+      },
+      {
+        "codigo": "227.81",
+        "descricao": "Aos Tessalonissenses I"
+      },
+      {
+        "codigo": "227.82",
+        "descricao": "Aos Tessalonissenses II"
+      },
+      {
+        "codigo": "227.83",
+        "descricao": "A Timóteo I"
+      },
+      {
+        "codigo": "227.84",
+        "descricao": "A Timóteo II"
+      },
+      {
+        "codigo": "227.85",
+        "descricao": "A Tito"
+      },
+      {
+        "codigo": "227.86",
+        "descricao": "A Filemon"
+      },
+      {
+        "codigo": "227.87",
+        "descricao": "Aos Hebreus"
+      },
+      {
+        "codigo": "227.9",
+        "descricao": "Epístolas católicas"
+      },
+      {
+        "codigo": "227.91",
+        "descricao": "Tiago"
+      },
+      {
+        "codigo": "227.92",
+        "descricao": "Pedro I"
+      },
+      {
+        "codigo": "227.93",
+        "descricao": "Pedro II"
+      },
+      {
+        "codigo": "227.94",
+        "descricao": "João I"
+      },
+      {
+        "codigo": "227.95",
+        "descricao": "João II"
+      },
+      {
+        "codigo": "227.96",
+        "descricao": "João III"
+      },
+      {
+        "codigo": "227.97",
+        "descricao": "Judas"
+      },
+      {
+        "codigo": "228",
+        "descricao": "Apocalípse"
+      },
+      {
+        "codigo": "229",
+        "descricao": "Trabalhos Apócrifos, Pseudoepígrafos, Intertestamentais"
+      },
+      {
+        "codigo": "230",
+        "descricao": "Cristianismo / Teologia Cristã / Mitologia cristã"
+      },
+      {
+        "codigo": "230.007",
+        "descricao": "Educação, pesquisa"
+      },
+      {
+        "codigo": "231",
+        "descricao": "Deus - Modos do conhecimento de Deus como Fé / Razão / Tradição"
+      },
+      {
+        "codigo": "231.1",
+        "descricao": "Santíssima Trindade"
+      },
+      {
+        "codigo": "232",
+        "descricao": "Jesus Cristo, sua vida e sua família - Cristologia"
+      },
+      {
+        "codigo": "232.1",
+        "descricao": "Encarnação"
+      },
+      {
+        "codigo": "232.3",
+        "descricao": "Cristo como Redentor"
+      },
+      {
+        "codigo": "232.4",
+        "descricao": "Sacrifício de Cristo"
+      },
+      {
+        "codigo": "232.5",
+        "descricao": "Ressurreição"
+      },
+      {
+        "codigo": "232.8",
+        "descricao": "Divindade e humanidade"
+      },
+      {
+        "codigo": "232.9",
+        "descricao": "Família e vida de Jesus"
+      },
+      {
+        "codigo": "232.901",
+        "descricao": "Vida de Jesus"
+      },
+      {
+        "codigo": "232.903",
+        "descricao": "Caráter e personalidade de Jesus"
+      },
+      {
+        "codigo": "232.91",
+        "descricao": "Maria como Mãe de Jesus (Mariologia)"
+      },
+      {
+        "codigo": "232.911",
+        "descricao": "Imaculada Conceição"
+      },
+      {
+        "codigo": "232.912",
+        "descricao": "Anunciação"
+      },
+      {
+        "codigo": "232.913",
+        "descricao": "Virgindade"
+      },
+      {
+        "codigo": "232.914",
+        "descricao": "Assunção"
+      },
+      {
+        "codigo": "232.915",
+        "descricao": "Santidade e virtudes – Milagres de Nossa Senhora"
+      },
+      {
+        "codigo": "232.92",
+        "descricao": "Nascimento e infância de Jesus"
+      },
+      {
+        "codigo": "232.93",
+        "descricao": "Família de Maria"
+      },
+      {
+        "codigo": "232.932",
+        "descricao": "José"
+      },
+      {
+        "codigo": "232.94",
+        "descricao": "João Batista"
+      },
+      {
+        "codigo": "232.95",
+        "descricao": "Vida pública"
+      },
+      {
+        "codigo": "232.955",
+        "descricao": "Milagres de Jesus"
+      },
+      {
+        "codigo": "232.96",
+        "descricao": "Paixão e Morte"
+      },
+      {
+        "codigo": "232.964",
+        "descricao": "Sepultamento / Santo Sudário"
+      },
+      {
+        "codigo": "232.97",
+        "descricao": "Ressurreição"
+      },
+      {
+        "codigo": "233",
+        "descricao": "Gênero Humano (Criação, natureza divina, tentação, liberdade de escolha e pecado)"
+      },
+      {
+        "codigo": "234",
+        "descricao": "Salvação e graça / Santificação"
+      },
+      {
+        "codigo": "234.1",
+        "descricao": "Tipos e significados da graça"
+      },
+      {
+        "codigo": "234.16",
+        "descricao": "Pelos sacramentos"
+      },
+      {
+        "codigo": "234.2",
+        "descricao": "Fé e esperança"
+      },
+      {
+        "codigo": "234.3",
+        "descricao": "Redenção"
+      },
+      {
+        "codigo": "234.4",
+        "descricao": "Regeneração"
+      },
+      {
+        "codigo": "234.5",
+        "descricao": "Arrependimento e perdão"
+      },
+      {
+        "codigo": "234.6",
+        "descricao": "Obediência"
+      },
+      {
+        "codigo": "234.7",
+        "descricao": "Absolvição"
+      },
+      {
+        "codigo": "234.8",
+        "descricao": "Santificação e santidade"
+      },
+      {
+        "codigo": "234.9",
+        "descricao": "Predestinação e livre arbítrio"
+      },
+      {
+        "codigo": "235",
+        "descricao": "Vida espiritual"
+      },
+      {
+        "codigo": "235.2",
+        "descricao": "Santos"
+      },
+      {
+        "codigo": "235.3",
+        "descricao": "Anjos"
+      },
+      {
+        "codigo": "235.4",
+        "descricao": "Demônio"
+      },
+      {
+        "codigo": "236",
+        "descricao": "Escatologia (Morte, vida eterna, céu, purgatório, inferno)"
+      },
+      {
+        "codigo": "238",
+        "descricao": "Credos, confissão das faltas / Promessas"
+      },
+      {
+        "codigo": "239",
+        "descricao": "Polêmicas (Argumentações sobre dogmas cristãos: virgindade, SS. Trindade, etc.)"
+      },
+      {
+        "codigo": "240",
+        "descricao": "Moral cristã e teologia da devoção (Consciência, virtudes, códigos de conduta, vícios, Pecado)"
+      },
+      {
+        "codigo": "241",
+        "descricao": "Teologia moral"
+      },
+      {
+        "codigo": "241.1",
+        "descricao": "Consciência"
+      },
+      {
+        "codigo": "241.2",
+        "descricao": "Leis e bases da moralidade"
+      },
+      {
+        "codigo": "241.3",
+        "descricao": "Pecado e vícios"
+      },
+      {
+        "codigo": "241.4",
+        "descricao": "Virtudes"
+      },
+      {
+        "codigo": "241.5",
+        "descricao": "Códigos de conduta (Dez Mandamentos, Sermão da Montanha)"
+      },
+      {
+        "codigo": "241.6",
+        "descricao": "Questões morais específicas / Ética, moral, sexualidade religiosas (relacionamento conjugal, controle de natalidade, namoro, noivado, casamento, família)"
+      },
+      {
+        "codigo": "242",
+        "descricao": "Orações / Preces / Literatura devota / Textos de meditação e contemplação"
+      },
+      {
+        "codigo": "242.2",
+        "descricao": "Orações de uso diário"
+      },
+      {
+        "codigo": "242.3",
+        "descricao": "Orações de uso no ano litúrgico / festas religiosas / Símbolos"
+      },
+      {
+        "codigo": "242.332",
+        "descricao": "Advento"
+      },
+      {
+        "codigo": "242.335",
+        "descricao": "Natal"
+      },
+      {
+        "codigo": "242.34",
+        "descricao": "Quaresma"
+      },
+      {
+        "codigo": "232.35",
+        "descricao": "Semana Santa"
+      },
+      {
+        "codigo": "242.36",
+        "descricao": "Páscoa / Ascensão"
+      },
+      {
+        "codigo": "242.37",
+        "descricao": "Outras festas / Dias de Santos"
+      },
+      {
+        "codigo": "242.38",
+        "descricao": "Pentecostes"
+      },
+      {
+        "codigo": "242.5",
+        "descricao": "Preces e meditações baseadas na Bíblia"
+      },
+      {
+        "codigo": "243",
+        "descricao": "Escritos evangélicos para pessoas e para famílias"
+      },
+      {
+        "codigo": "246",
+        "descricao": "Uso da arte no cristianismo"
+      },
+      {
+        "codigo": "246.5",
+        "descricao": "Ícones, símbolos, incenso, velas, cruzes, crucifixos, cores e luzes"
+      },
+      {
+        "codigo": "246.7",
+        "descricao": "Dramatizações"
+      },
+      {
+        "codigo": "246.75",
+        "descricao": "Músicas"
+      },
+      {
+        "codigo": "247",
+        "descricao": "Mobiliário religioso"
+      },
+      {
+        "codigo": "248",
+        "descricao": "Cristãos: experiência, prática, vida, misticismo, conversão, cultos e testemunhos"
+      },
+      {
+        "codigo": "248.2",
+        "descricao": "Experiências religiosas (Misticismo, conversão)"
+      },
+      {
+        "codigo": "248.3",
+        "descricao": "Cultos, preces, meditações e contemplações / Prática religiosa / Amor a Deus"
+      },
+      {
+        "codigo": "248.4",
+        "descricao": "Vida e práticas cristãs / Reflexões / Mensagens / Espiritualidade / Guias para a vida familiar cristã"
+      },
+      {
+        "codigo": "248.5",
+        "descricao": "Testemunhos"
+      },
+      {
+        "codigo": "248.8",
+        "descricao": "Guias de vida para cristãos por classes específicas"
+      },
+      {
+        "codigo": "248.82",
+        "descricao": "Crianças"
+      },
+      {
+        "codigo": "248.83",
+        "descricao": "Jovens"
+      },
+      {
+        "codigo": "248.84",
+        "descricao": "Adultos"
+      },
+      {
+        "codigo": "248.842",
+        "descricao": "Homens"
+      },
+      {
+        "codigo": "248.842 1",
+        "descricao": "Pais"
+      },
+      {
+        "codigo": "248.843",
+        "descricao": "Mulheres"
+      },
+      {
+        "codigo": "248.843 1",
+        "descricao": "Mães"
+      },
+      {
+        "codigo": "248.844",
+        "descricao": "Casais"
+      },
+      {
+        "codigo": "248.846",
+        "descricao": "Pessoas separadas, divorciadas"
+      },
+      {
+        "codigo": "248.85",
+        "descricao": "Velhos"
+      },
+      {
+        "codigo": "248.86",
+        "descricao": "Doentes, deficientes"
+      },
+      {
+        "codigo": "248.88",
+        "descricao": "Classes ocupacionais"
+      },
+      {
+        "codigo": "248.894 2",
+        "descricao": "Padres / Vocações"
+      },
+      {
+        "codigo": "248.894 3",
+        "descricao": "Freiras / Vocações"
+      },
+      {
+        "codigo": "249",
+        "descricao": "Observância católica na vida familiar: preces, ritos, cerimônias familiares"
+      },
+      {
+        "codigo": "250",
+        "descricao": "Ordens religiosas e igrejas locais"
+      },
+      {
+        "codigo": "251",
+        "descricao": "Práticas"
+      },
+      {
+        "codigo": "252",
+        "descricao": "Sermões"
+      },
+      {
+        "codigo": "253",
+        "descricao": "Trabalho pastoral"
+      },
+      {
+        "codigo": "253.78",
+        "descricao": "Pelo rádio e televisão"
+      },
+      {
+        "codigo": "254",
+        "descricao": "Administração da paróquia"
+      },
+      {
+        "codigo": "255",
+        "descricao": "Congregações religiosas (p/ homens e p/ mulheres)"
+      },
+      {
+        "codigo": "258",
+        "descricao": "Assistência religiosa / Pastoral"
+      },
+      {
+        "codigo": "259",
+        "descricao": "Campanhas / Cuidados / Campanha da Fraternidade"
+      },
+      {
+        "codigo": "260",
+        "descricao": "Teologia social e eclesiástica / Organização do Cristianismo"
+      },
+      {
+        "codigo": "261",
+        "descricao": "Papel da Igreja na sociedade (Igreja x Outras religiões / Igreja x Política / Igreja x Problemas sócio-econômicos como fome, crimes, ecologia, racismo, sexo, guerras, etc.)"
+      },
+      {
+        "codigo": "261.7",
+        "descricao": "Cristianismo e política / Cristianismo e direitos civis"
+      },
+      {
+        "codigo": "261.72",
+        "descricao": "Liberdade religiosa"
+      },
+      {
+        "codigo": "261.73",
+        "descricao": "Teocracia (Supremacia da Igreja sobre o governo...)"
+      }
+    ]
+  },
+  {
+    "codigo": "300",
+    "descricao": "Ciências Sociais",
+    "subclasses": []
+  },
+  {
+    "codigo": "400",
+    "descricao": "Línguas e Idiomas",
+    "subclasses": []
+  },
+  {
+    "codigo": "500",
+    "descricao": "Ciências Puras (Matemática e Ciências)",
+    "subclasses": []
+  },
+  {
+    "codigo": "600",
+    "descricao": "Ciências Aplicadas e Tecnologia",
+    "subclasses": []
+  },
+  {
+    "codigo": "700",
+    "descricao": "Artes e Lazer",
+    "subclasses": []
+  },
+  {
+    "codigo": "800",
+    "descricao": "Literatura",
+    "subclasses": []
+  },
+  {
+    "codigo": "900",
+    "descricao": "História e Geografia",
+    "subclasses": []
+  }
+];
