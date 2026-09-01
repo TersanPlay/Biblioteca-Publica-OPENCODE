@@ -1,0 +1,68 @@
+﻿0217601 feat(book-fields): add Subject, KnowledgeArea models with many-to-many
+
+--- Stat Summary ---
+
+ backend/prisma/schema.prisma | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+--- Full Diff ---
+
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 5be84f0..eb37170 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -86,24 +86,54 @@ model Book {
+   cdd               String?
+   cutter            String?
+   physicalLocation  String?
+   availableCopies   Int?
+   acquisitionType   String?
+   isArchived      Boolean      @default(false)
+   categories      BookCategory[]
+   createdAt       DateTime     @default(now())
+   updatedAt       DateTime     @updatedAt
+   authors         BookAuthor[]
++  subjects        BookSubject[]
++  knowledgeAreas  BookKnowledgeArea[]
+   loans           Loan[]
+   reservations    Reservation[]
+ }
+ 
++model Subject {
++  id    Int    @id @default(autoincrement())
++  name  String @unique
++  books BookSubject[]
++}
++
++model BookSubject {
++  bookId    Int
++  subjectId Int
++  book      Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
++  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
++  @@id([bookId, subjectId])
++}
++
++model KnowledgeArea {
++  id    Int    @id @default(autoincrement())
++  name  String @unique
++  books BookKnowledgeArea[]
++}
++
++model BookKnowledgeArea {
++  bookId          Int
++  knowledgeAreaId Int
++  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
++  knowledgeArea   KnowledgeArea @relation(fields: [knowledgeAreaId], references: [id], onDelete: Cascade)
++  @@id([bookId, knowledgeAreaId])
++}
++
+ model BookAuthor {
+   bookId   Int
+   authorId Int
+   book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+   author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+ 
+   @@id([bookId, authorId])
+ }
+ 
+ model BookCategory {

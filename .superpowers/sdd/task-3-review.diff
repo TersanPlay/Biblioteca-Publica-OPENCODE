@@ -1,0 +1,48 @@
+﻿c3455ed feat(book-fields): extend bookSchema with new fields
+
+--- Stat Summary ---
+
+ backend/src/validation.ts | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- Full Diff ---
+
+diff --git a/backend/src/validation.ts b/backend/src/validation.ts
+index bf3a4d1..effb441 100644
+--- a/backend/src/validation.ts
++++ b/backend/src/validation.ts
+@@ -116,20 +116,34 @@ export const bookSchema = z.object({
+   publisher: strOpt,
+   edition: intOpt,
+   publicationYear: intOpt,
+   language: strOpt,
+   pages: intOpt,
+   coverUrl: strOpt,
+   categoryIds: z.array(z.number().int()).default([]),
+   categoryNames: z.array(z.string().trim().min(2, 'nome de categoria muito curto').max(120)).default([]),
+   authorIds: z.array(z.number().int()).default([]),
+   authorNames: z.array(z.string().trim().min(2, 'nome de autor muito curto').max(120)).default([]),
++  format: z.enum(['CAPA', 'BROCHURA', 'ESPIRAL']).optional(),
++  volume: strOpt,
++  cdd: strOpt,
++  cutter: strOpt,
++  physicalLocation: strOpt,
++  availableCopies: intOpt,
++  acquisitionType: z.enum([
++    'COMPRA', 'DOACAO', 'REPOSICAO', 'PRODUCAO_INTERNA',
++    'TROCA', 'EMPRESTIMO_BIBLIOTECAS', 'LICITACAO', 'PERMUTA', 'CONVENIO',
++  ]).optional(),
++  subjectNames: z.array(z.string().trim().min(2, 'nome de assunto muito curto').max(120)).default([]),
++  subjectIds: z.array(z.number().int()).default([]),
++  knowledgeAreaNames: z.array(z.string().trim().min(2, 'nome de area muito curto').max(120)).default([]),
++  knowledgeAreaIds: z.array(z.number().int()).default([]),
+ });
+ 
+ export const authorSchema = z.object({
+   name: z.string().trim().min(2, 'nome obrigat├│rio'),
+   isActive: z.boolean().optional(),
+ });
+ 
+ export const authorStatusSchema = z.object({
+   isActive: z.boolean(),
+ });

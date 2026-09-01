@@ -1,0 +1,57 @@
+﻿22c604e feat(book-fields): add BookFormat, AcquisitionType enums and scalar fields
+
+--- Stat Summary ---
+
+ backend/prisma/schema.prisma | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- Full Diff ---
+
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 4f225b7..5be84f0 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -58,33 +58,43 @@ model Author {
+ model Category {
+   id          Int      @id @default(autoincrement())
+   name        String   @unique
+   description String?
+   status      String   @default("ACTIVE")
+   createdAt   DateTime @default(now())
+   updatedAt   DateTime @updatedAt
+   bookLinks   BookCategory[]
+ }
+ 
++// BookFormat: CAPA, BROCHURA, ESPIRAL
++// AcquisitionType: COMPRA, DOACAO, REPOSICAO, PRODUCAO_INTERNA, TROCA, EMPRESTIMO_BIBLIOTECAS, LICITACAO, PERMUTA, CONVENIO
++
+ model Book {
+   id              Int          @id @default(autoincrement())
+   isbn10          String?      @unique
+   isbn13          String?      @unique
+   title           String
+   subtitle        String?
+   description     String?
+   publisher       String?
+   edition         Int?
+   publicationYear Int?
+   language        String?
+   pages           Int?
+   coverUrl        String?
++  format            String?
++  volume            String?
++  cdd               String?
++  cutter            String?
++  physicalLocation  String?
++  availableCopies   Int?
++  acquisitionType   String?
+   isArchived      Boolean      @default(false)
+   categories      BookCategory[]
+   createdAt       DateTime     @default(now())
+   updatedAt       DateTime     @updatedAt
+   authors         BookAuthor[]
+   loans           Loan[]
+   reservations    Reservation[]
+ }
+ 
+ model BookAuthor {

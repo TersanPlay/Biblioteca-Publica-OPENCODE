@@ -1,0 +1,99 @@
+﻿diff --git a/frontend/src/components/ui/confirm-dialog.tsx b/frontend/src/components/ui/confirm-dialog.tsx
+index 379f571..4e70676 100644
+--- a/frontend/src/components/ui/confirm-dialog.tsx
++++ b/frontend/src/components/ui/confirm-dialog.tsx
+@@ -1,5 +1,5 @@
+ import * as DialogPrimitive from '@radix-ui/react-dialog';
+-import { useState } from 'react';
++import { type ReactNode, useState } from 'react';
+ import { Button } from './button';
+ import { Dialog, DialogContent, DialogHeader } from './dialog';
+ 
+@@ -13,6 +13,7 @@ export function ConfirmDialog({
+   destructive,
+   loading,
+   onConfirm,
++  children,
+ }: {
+   open: boolean;
+   onOpenChange: (open: boolean) => void;
+@@ -23,6 +24,7 @@ export function ConfirmDialog({
+   destructive?: boolean;
+   loading?: boolean;
+   onConfirm: () => void | Promise<void>;
++  children?: ReactNode;
+ }) {
+   const [busy, setBusy] = useState(false);
+   const isBusy = busy || loading;
+@@ -30,6 +32,7 @@ export function ConfirmDialog({
+     <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="max-w-md">
+         <DialogHeader title={title} description={description} />
++        {children}
+         <div className="flex items-center justify-end gap-2">
+           <DialogPrimitive.Close asChild>
+             <Button variant="secondary" disabled={isBusy}>
+diff --git a/frontend/src/pages/admin/reader-details.tsx b/frontend/src/pages/admin/reader-details.tsx
+index fd200cb..b99c1b8 100644
+--- a/frontend/src/pages/admin/reader-details.tsx
++++ b/frontend/src/pages/admin/reader-details.tsx
+@@ -21,6 +21,8 @@ export function ReaderDetailsPage() {
+   const { data, error, loading, refetch } = useAsyncData(fetcher, [readerId]);
+   const [confirming, setConfirming] = useState<{ kind: 'none' | 'block' | 'unblock' }>({ kind: 'none' });
+   const [busy, setBusy] = useState(false);
++  const [blockCategory, setBlockCategory] = useState<string>('ATRASO_REPETIDO');
++  const [blockReason, setBlockReason] = useState('');
+   const { toast } = useApiToast();
+ 
+   if (loading) return <PageSkeleton />;
+@@ -42,9 +44,11 @@ export function ReaderDetailsPage() {
+     setBusy(true);
+     try {
+       if (reader.status === 'BLOCKED') await readersApi.unblock(reader.id);
+-      else await readersApi.block(reader.id);
++      else await readersApi.block(reader.id, blockReason || undefined, blockCategory || undefined);
+       toast.success(reader.status === 'BLOCKED' ? 'Leitor desbloqueado' : 'Leitor bloqueado');
+       setConfirming({ kind: 'none' });
++      setBlockReason('');
++      setBlockCategory('ATRASO_REPETIDO');
+       refetch();
+     } catch (err) {
+       toast.error('N├úo foi poss├¡vel concluir', apiErrorMessage(err));
+@@ -207,7 +211,35 @@ export function ReaderDetailsPage() {
+         destructive={confirming.kind === 'block'}
+         loading={busy}
+         onConfirm={toggleBlock}
+-      />
++      >
++        {confirming.kind === 'block' && (
++          <div className="space-y-3 py-2">
++            <div>
++              <label className="mb-1 block text-[12px] font-bold text-muted">Motivo</label>
++              <select
++                value={blockCategory}
++                onChange={(e) => setBlockCategory(e.target.value)}
++                className="h-9 w-full rounded-control bg-surface px-3 text-sm text-ink shadow-[inset_0_0_0_1px_rgba(23,26,26,.1)]"
++              >
++                <option value="ATRASO_REPETIDO">Atraso repetido</option>
++                <option value="COMPORTAMENTO">Comportamento inadequado</option>
++                <option value="SOLICITACAO">Solicita├º├úo administrativa</option>
++                <option value="OUTRO">Outro</option>
++              </select>
++            </div>
++            <div>
++              <label className="mb-1 block text-[12px] font-bold text-muted">Detalhes (opcional)</label>
++              <textarea
++                value={blockReason}
++                onChange={(e) => setBlockReason(e.target.value)}
++                placeholder="Descreva o motivo do bloqueio..."
++                rows={3}
++                className="w-full rounded-control bg-surface px-3 py-2 text-sm text-ink shadow-[inset_0_0_0_1px_rgba(23,26,26,.1)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#087F8C]"
++              />
++            </div>
++          </div>
++        )}
++      </ConfirmDialog>
+     </div>
+   );
+ }
+\ No newline at end of file

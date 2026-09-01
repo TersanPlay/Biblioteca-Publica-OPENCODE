@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --hairline: rgba(23, 26, 26, 0.08);
+  --hairline-strong: rgba(23, 26, 26, 0.13);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.16, 1.16, 0.3, 1);
+}
+
+@layer base {
+  * {
+    border-color: var(--hairline);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-[-0.02em];
+  }
+  ::selection {
+    @apply bg-primary-soft text-primary-dark;
+  }
+}
+
+@layer utilities {
+  .hairline {
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .hairline-strong {
+    box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  }
+  .shell {
+    padding: 8px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.48);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      0 0 0 1px rgba(23, 26, 26, 0.08),
+      0 24px 48px -32px rgba(23, 26, 26, 0.24);
+  }
+  .core {
+    border-radius: 15px;
+    background: #fffdf9;
+    box-shadow: inset 0 0 0 1px rgba(23, 26, 26, 0.08);
+  }
+  .anim-pop {
+    animation: anim-pop 0.18s var(--ease);
+  }
+  .anim-fade {
+    animation: anim-fade 0.2s var(--ease);
+  }
+  .anim-rise {
+    animation: anim-rise 0.35s var(--ease);
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+}
+
+@keyframes anim-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes anim-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes anim-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

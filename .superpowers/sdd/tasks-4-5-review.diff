@@ -1,0 +1,303 @@
+﻿8718c3d feat(book-fields): subjects/knowledgeAreas no backend e persistencia dos campos escalares
+
+--- Stat Summary ---
+
+ backend/src/modules/book.routes.ts | 122 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 121 insertions(+), 1 deletion(-)
+
+--- Full Diff ---
+
+diff --git a/backend/src/modules/book.routes.ts b/backend/src/modules/book.routes.ts
+index 635d230..41f5cea 100644
+--- a/backend/src/modules/book.routes.ts
++++ b/backend/src/modules/book.routes.ts
+@@ -7,20 +7,22 @@ import { requireAuth } from '../middleware/auth';
+ import { writeAudit } from '../lib/audit';
+ import { bookQuerySchema, bookSchema, cleanInt, cleanNull, normalizeIsbn, parse } from '../validation';
+ import { resolveBookMetadata } from '../lib/cover';
+ import { coverLimiter } from '../middleware/cover-rate-limit';
+ 
+ export const bookRouter = Router();
+ 
+ export const bookInclude = {
+   categories: { include: { category: true } },
+   authors: { include: { author: true } },
++  subjects: { include: { subject: true } },
++  knowledgeAreas: { include: { knowledgeArea: true } },
+ };
+ 
+ const ACTIVE_LOAN_STATUSES = ['ACTIVE', 'OVERDUE'];
+ 
+ async function resolveAuthorNames(
+   tx: Prisma.TransactionClient,
+   names: string[],
+ ): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
+   const ids: number[] = [];
+   const created: { id: number; name: string }[] = [];
+@@ -63,24 +65,78 @@ async function resolveCategoryNames(
+     } else {
+       const category = await tx.category.create({ data: { name } });
+       created.push({ id: category.id, name: category.name });
+       nameMap.set(key, category.id);
+       ids.push(category.id);
+     }
+   }
+   return { ids, created };
+ }
+ 
++async function resolveSubjectNames(
++  tx: Prisma.TransactionClient,
++  names: string[],
++): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
++  const ids: number[] = [];
++  const created: { id: number; name: string }[] = [];
++  if (names.length === 0) return { ids, created };
++  const all = await tx.subject.findMany({ select: { id: true, name: true } });
++  const nameMap = new Map(all.map((s) => [s.name.toLowerCase(), s.id]));
++  for (const raw of names) {
++    const name = raw.trim();
++    if (!name) continue;
++    const key = name.toLowerCase();
++    const existingId = nameMap.get(key);
++    if (existingId) {
++      ids.push(existingId);
++    } else {
++      const subject = await tx.subject.create({ data: { name } });
++      created.push({ id: subject.id, name: subject.name });
++      nameMap.set(key, subject.id);
++      ids.push(subject.id);
++    }
++  }
++  return { ids, created };
++}
++
++async function resolveKnowledgeAreaNames(
++  tx: Prisma.TransactionClient,
++  names: string[],
++): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
++  const ids: number[] = [];
++  const created: { id: number; name: string }[] = [];
++  if (names.length === 0) return { ids, created };
++  const all = await tx.knowledgeArea.findMany({ select: { id: true, name: true } });
++  const nameMap = new Map(all.map((k) => [k.name.toLowerCase(), k.id]));
++  for (const raw of names) {
++    const name = raw.trim();
++    if (!name) continue;
++    const key = name.toLowerCase();
++    const existingId = nameMap.get(key);
++    if (existingId) {
++      ids.push(existingId);
++    } else {
++      const knowledgeArea = await tx.knowledgeArea.create({ data: { name } });
++      created.push({ id: knowledgeArea.id, name: knowledgeArea.name });
++      nameMap.set(key, knowledgeArea.id);
++      ids.push(knowledgeArea.id);
++    }
++  }
++  return { ids, created };
++}
++
+ function mapBook(b: any, isAvailable: boolean) {
+   return {
+     ...b,
+     categories: (b.categories ?? []).map((c: any) => c.category),
++    subjects: (b.subjects ?? []).map((s: any) => s.subject),
++    knowledgeAreas: (b.knowledgeAreas ?? []).map((k: any) => k.knowledgeArea),
+     isAvailable,
+   };
+ }
+ 
+ async function loanedBookIds(): Promise<Set<number>> {
+   const loans = await prisma.loan.findMany({
+     where: { status: { in: ACTIVE_LOAN_STATUSES } },
+     select: { bookId: true },
+     distinct: ['bookId'],
+   });
+@@ -242,59 +298,90 @@ bookRouter.post(
+   asyncHandler(async (req, res) => {
+ const data = parse(bookSchema, req.body);
+     const duplicate = await findDuplicateBook(providedIsbns(data));
+     if (duplicate) {
+       duplicateConflict(res, duplicate);
+       return;
+     }
+     const result = await prisma.$transaction(async (tx) => {
+       const createdAuthors: { id: number; name: string }[] = [];
+       const createdCategories: { id: number; name: string }[] = [];
++      const createdSubjects: { id: number; name: string }[] = [];
++      const createdKnowledgeAreas: { id: number; name: string }[] = [];
+       const book = await tx.book.create({
+         data: {
+           title: data.title,
+           subtitle: cleanNull(data.subtitle),
+           isbn10: cleanNull(data.isbn10 ? normalizeIsbn(data.isbn10) : null),
+           isbn13: cleanNull(data.isbn13 ? normalizeIsbn(data.isbn13) : null),
+           description: cleanNull(data.description),
+           publisher: cleanNull(data.publisher),
+           edition: cleanInt(data.edition),
+           publicationYear: cleanInt(data.publicationYear),
+           language: cleanNull(data.language),
+           pages: cleanInt(data.pages),
+           coverUrl: cleanNull(data.coverUrl),
++          format: cleanNull(data.format),
++          volume: cleanNull(data.volume),
++          cdd: cleanNull(data.cdd),
++          cutter: cleanNull(data.cutter),
++          physicalLocation: cleanNull(data.physicalLocation),
++          availableCopies: cleanInt(data.availableCopies),
++          acquisitionType: cleanNull(data.acquisitionType),
+         },
+       });
+       if (data.authorIds.length > 0 || data.authorNames.length > 0) {
+         const resolved = await resolveAuthorNames(tx, data.authorNames);
+         const authorIds = [...new Set([...data.authorIds, ...resolved.ids])];
+         await tx.bookAuthor.createMany({
+           data: authorIds.map((authorId) => ({ bookId: book.id, authorId })),
+         });
+         createdAuthors.push(...resolved.created);
+       }
+       if (data.categoryIds.length > 0 || data.categoryNames.length > 0) {
+         const resolved = await resolveCategoryNames(tx, data.categoryNames);
+         const categoryIds = [...new Set([...data.categoryIds, ...resolved.ids])];
+         await tx.bookCategory.createMany({
+           data: categoryIds.map((categoryId) => ({ bookId: book.id, categoryId })),
+         });
+         createdCategories.push(...resolved.created);
+       }
+-      return { book, createdAuthors, createdCategories };
++      if (data.subjectIds.length > 0 || data.subjectNames.length > 0) {
++        const resolved = await resolveSubjectNames(tx, data.subjectNames);
++        const subjectIds = [...new Set([...data.subjectIds, ...resolved.ids])];
++        await tx.bookSubject.createMany({
++          data: subjectIds.map((subjectId) => ({ bookId: book.id, subjectId })),
++        });
++        createdSubjects.push(...resolved.created);
++      }
++      if (data.knowledgeAreaIds.length > 0 || data.knowledgeAreaNames.length > 0) {
++        const resolved = await resolveKnowledgeAreaNames(tx, data.knowledgeAreaNames);
++        const knowledgeAreaIds = [...new Set([...data.knowledgeAreaIds, ...resolved.ids])];
++        await tx.bookKnowledgeArea.createMany({
++          data: knowledgeAreaIds.map((knowledgeAreaId) => ({ bookId: book.id, knowledgeAreaId })),
++        });
++        createdKnowledgeAreas.push(...resolved.created);
++      }
++      return { book, createdAuthors, createdCategories, createdSubjects, createdKnowledgeAreas };
+     });
+     for (const a of result.createdAuthors) {
+       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
+     }
+     for (const c of result.createdCategories) {
+       await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+     }
++    for (const s of result.createdSubjects) {
++      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
++    }
++    for (const k of result.createdKnowledgeAreas) {
++      await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);
++    }
+     await writeAudit(req.user?.id, 'BOOK_CREATED', 'Book', result.book.id, { title: result.book.title }, req.ip);
+     const full = await prisma.book.findUnique({ where: { id: result.book.id }, include: bookInclude });
+     res.status(201).json(mapBook(full!, true));
+   }),
+ );
+ 
+ bookRouter.put(
+   '/:id',
+   requireAuth,
+   asyncHandler(async (req, res) => {
+@@ -302,62 +389,95 @@ const id = Number(req.params.id);
+     const data = parse(bookSchema, req.body);
+     const existing = await prisma.book.findUnique({ where: { id } });
+     if (!existing) throw new HttpError(404, 'Livro n├úo encontrado');
+     const duplicate = await findDuplicateBook(providedIsbns(data), id);
+     if (duplicate) {
+       duplicateConflict(res, duplicate);
+       return;
+     }
+ const createdAuthors: { id: number; name: string }[] = [];
+     const createdCategories: { id: number; name: string }[] = [];
++    const createdSubjects: { id: number; name: string }[] = [];
++    const createdKnowledgeAreas: { id: number; name: string }[] = [];
+     await prisma.$transaction(async (tx) => {
+       await tx.book.update({
+         where: { id },
+         data: {
+           title: data.title,
+           subtitle: cleanNull(data.subtitle),
+           isbn10: cleanNull(data.isbn10 ? normalizeIsbn(data.isbn10) : null),
+           isbn13: cleanNull(data.isbn13 ? normalizeIsbn(data.isbn13) : null),
+           description: cleanNull(data.description),
+           publisher: cleanNull(data.publisher),
+           edition: cleanInt(data.edition),
+           publicationYear: cleanInt(data.publicationYear),
+           language: cleanNull(data.language),
+           pages: cleanInt(data.pages),
+           coverUrl: cleanNull(data.coverUrl),
++          format: cleanNull(data.format),
++          volume: cleanNull(data.volume),
++          cdd: cleanNull(data.cdd),
++          cutter: cleanNull(data.cutter),
++          physicalLocation: cleanNull(data.physicalLocation),
++          availableCopies: cleanInt(data.availableCopies),
++          acquisitionType: cleanNull(data.acquisitionType),
+         },
+       });
+       await tx.bookAuthor.deleteMany({ where: { bookId: id } });
+       const resolved = await resolveAuthorNames(tx, data.authorNames);
+       const authorIds = [...new Set([...data.authorIds, ...resolved.ids])];
+       if (authorIds.length > 0) {
+         await tx.bookAuthor.createMany({
+           data: authorIds.map((authorId) => ({ bookId: id, authorId })),
+         });
+       }
+       createdAuthors.push(...resolved.created);
+       await tx.bookCategory.deleteMany({ where: { bookId: id } });
+       const resolvedCategories = await resolveCategoryNames(tx, data.categoryNames);
+       const categoryIds = [...new Set([...data.categoryIds, ...resolvedCategories.ids])];
+       if (categoryIds.length > 0) {
+         await tx.bookCategory.createMany({
+           data: categoryIds.map((categoryId) => ({ bookId: id, categoryId })),
+         });
+       }
+       createdCategories.push(...resolvedCategories.created);
++      await tx.bookSubject.deleteMany({ where: { bookId: id } });
++      const resolvedSubjects = await resolveSubjectNames(tx, data.subjectNames);
++      const subjectIds = [...new Set([...data.subjectIds, ...resolvedSubjects.ids])];
++      if (subjectIds.length > 0) {
++        await tx.bookSubject.createMany({
++          data: subjectIds.map((subjectId) => ({ bookId: id, subjectId })),
++        });
++      }
++      createdSubjects.push(...resolvedSubjects.created);
++      await tx.bookKnowledgeArea.deleteMany({ where: { bookId: id } });
++      const resolvedKnowledgeAreas = await resolveKnowledgeAreaNames(tx, data.knowledgeAreaNames);
++      const knowledgeAreaIds = [...new Set([...data.knowledgeAreaIds, ...resolvedKnowledgeAreas.ids])];
++      if (knowledgeAreaIds.length > 0) {
++        await tx.bookKnowledgeArea.createMany({
++          data: knowledgeAreaIds.map((knowledgeAreaId) => ({ bookId: id, knowledgeAreaId })),
++        });
++      }
++      createdKnowledgeAreas.push(...resolvedKnowledgeAreas.created);
+     });
+     for (const a of createdAuthors) {
+       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
+     }
+     for (const c of createdCategories) {
+       await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+     }
++    for (const s of createdSubjects) {
++      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
++    }
++    for (const k of createdKnowledgeAreas) {
++      await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);
++    }
+     await writeAudit(req.user?.id, 'BOOK_UPDATED', 'Book', id, { title: data.title }, req.ip);
+     const full = await prisma.book.findUnique({ where: { id }, include: bookInclude });
+     const activeLoans = await prisma.loan.count({
+       where: { bookId: id, status: { in: ACTIVE_LOAN_STATUSES } },
+     });
+     res.json(mapBook(full!, activeLoans === 0));
+   }),
+ );
+ 
+ bookRouter.delete(

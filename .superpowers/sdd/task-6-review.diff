@@ -1,0 +1,47 @@
+﻿diff --git a/frontend/src/features/api.ts b/frontend/src/features/api.ts
+index a6d537d..661136b 100644
+--- a/frontend/src/features/api.ts
++++ b/frontend/src/features/api.ts
+@@ -3,6 +3,7 @@ import type {
+   Author,
+   AuditLog,
+   Backup,
++  BlockedReader,
+   Book,
+   BookFormValues,
+   BookRef,
+@@ -111,10 +112,14 @@ export const readersApi = {
+     api.post<Reader>('/readers', cleanPayload(v)).then((r) => r.data),
+   update: (id: number, v: Record<string, unknown>) =>
+     api.put<Reader>(`/readers/${id}`, cleanPayload(v)).then((r) => r.data),
+-  block: (id: number) =>
+-    api.patch<Reader>(`/readers/${id}/status`, { status: 'BLOCKED' }).then((r) => r.data),
++  block: (id: number, reason?: string, category?: string) =>
++    api.patch<Reader>(`/readers/${id}/status`, { status: 'BLOCKED', reason, category }).then((r) => r.data),
+   unblock: (id: number) =>
+     api.patch<Reader>(`/readers/${id}/status`, { status: 'ACTIVE' }).then((r) => r.data),
++  unblockBatch: (ids: number[]) =>
++    Promise.all(ids.map((id) => api.patch(`/readers/${id}/status`, { status: 'ACTIVE' }))),
++  blocked: (params?: Params) =>
++    api.get<Paginated<BlockedReader>>('/readers/blocked', { params }).then((r) => r.data),
+ };
+ 
+ export const loansApi = {
+diff --git a/frontend/src/types/api.ts b/frontend/src/types/api.ts
+index 8ee3d63..213916d 100644
+--- a/frontend/src/types/api.ts
++++ b/frontend/src/types/api.ts
+@@ -89,6 +89,13 @@ export interface Reader {
+   activeLoans?: number;
+ }
+ 
++export interface BlockedReader extends Reader {
++  blockReason: string | null;
++  blockCategory: string | null;
++  blockedAt: string | null;
++  blockedByName: string | null;
++}
++
+ export interface ReaderDetail {
+   reader: Reader;
+   loans: Loan[];

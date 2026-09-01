@@ -1,0 +1,1590 @@
+﻿aedd7d2 feat(book-fields): coluna Formato na listagem de livros
+bfc4bcd feat(book-fields): formulario de livros com 6 secoes, tag input unificado e novos campos
+0f048d4 feat(book-fields): tipos e API frontend para novos campos, assuntos e areas
+576bb55 feat(book-fields): endpoints GET /subjects e /knowledge-areas para autocomplete
+8718c3d feat(book-fields): subjects/knowledgeAreas no backend e persistencia dos campos escalares
+c3455ed feat(book-fields): extend bookSchema with new fields
+0217601 feat(book-fields): add Subject, KnowledgeArea models with many-to-many
+22c604e feat(book-fields): add BookFormat, AcquisitionType enums and scalar fields
+
+--- Stat Summary ---
+
+ backend/prisma/schema.prisma                 |  40 ++
+ backend/src/app.ts                           |   4 +
+ backend/src/modules/book.routes.ts           | 122 +++++-
+ backend/src/modules/knowledge-area.routes.ts |  13 +
+ backend/src/modules/subject.routes.ts        |  13 +
+ backend/src/validation.ts                    |  14 +
+ frontend/src/features/api.ts                 |  21 +
+ frontend/src/pages/admin/book-form.tsx       | 606 +++++++++++++++------------
+ frontend/src/pages/admin/books.tsx           |  14 +
+ frontend/src/types/api.ts                    |  41 ++
+ 10 files changed, 614 insertions(+), 274 deletions(-)
+
+--- Full Diff ---
+
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 4f225b7..eb37170 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -58,42 +58,82 @@ model Author {
+ model Category {
+   id          Int      @id @default(autoincrement())
+   name        String   @unique
+   description String?
+   status      String   @default("ACTIVE")
+   createdAt   DateTime @default(now())
+   updatedAt   DateTime @updatedAt
+   bookLinks   BookCategory[]
+ }
+ 
++// BookFormat: CAPA, BROCHURA, ESPIRAL
++// AcquisitionType: COMPRA, DOACAO, REPOSICAO, PRODUCAO_INTERNA, TROCA, EMPRESTIMO_BIBLIOTECAS, LICITACAO, PERMUTA, CONVENIO
++
+ model Book {
+   id              Int          @id @default(autoincrement())
+   isbn10          String?      @unique
+   isbn13          String?      @unique
+   title           String
+   subtitle        String?
+   description     String?
+   publisher       String?
+   edition         Int?
+   publicationYear Int?
+   language        String?
+   pages           Int?
+   coverUrl        String?
++  format            String?
++  volume            String?
++  cdd               String?
++  cutter            String?
++  physicalLocation  String?
++  availableCopies   Int?
++  acquisitionType   String?
+   isArchived      Boolean      @default(false)
+   categories      BookCategory[]
+   createdAt       DateTime     @default(now())
+   updatedAt       DateTime     @updatedAt
+   authors         BookAuthor[]
++  subjects        BookSubject[]
++  knowledgeAreas  BookKnowledgeArea[]
+   loans           Loan[]
+   reservations    Reservation[]
+ }
+ 
++model Subject {
++  id    Int    @id @default(autoincrement())
++  name  String @unique
++  books BookSubject[]
++}
++
++model BookSubject {
++  bookId    Int
++  subjectId Int
++  book      Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
++  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
++  @@id([bookId, subjectId])
++}
++
++model KnowledgeArea {
++  id    Int    @id @default(autoincrement())
++  name  String @unique
++  books BookKnowledgeArea[]
++}
++
++model BookKnowledgeArea {
++  bookId          Int
++  knowledgeAreaId Int
++  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
++  knowledgeArea   KnowledgeArea @relation(fields: [knowledgeAreaId], references: [id], onDelete: Cascade)
++  @@id([bookId, knowledgeAreaId])
++}
++
+ model BookAuthor {
+   bookId   Int
+   authorId Int
+   book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+   author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+ 
+   @@id([bookId, authorId])
+ }
+ 
+ model BookCategory {
+diff --git a/backend/src/app.ts b/backend/src/app.ts
+index fc3267f..ee430d5 100644
+--- a/backend/src/app.ts
++++ b/backend/src/app.ts
+@@ -1,17 +1,19 @@
+ import cors from 'cors';
+ import express from 'express';
+ import { authRouter } from './modules/auth.routes';
+ import { userRouter } from './modules/user.routes';
+ import { bookRouter } from './modules/book.routes';
+ import { authorRouter } from './modules/author.routes';
+ import { categoryRouter } from './modules/category.routes';
++import { subjectRouter } from './modules/subject.routes';
++import { knowledgeAreaRouter } from './modules/knowledge-area.routes';
+ import { readerRouter } from './modules/reader.routes';
+ import { loanRouter } from './modules/loan.routes';
+ import { reservationRouter } from './modules/reservation.routes';
+ import { reportRouter } from './modules/report.routes';
+ import { auditRouter } from './modules/audit.routes';
+ import { settingsRouter } from './modules/settings.routes';
+ import { dashboardRouter } from './modules/dashboard.routes';
+ import { backupRouter } from './modules/backup.routes';
+ import { errorHandler, notFoundHandler } from './middleware/error-handler';
+ 
+@@ -28,20 +30,22 @@ app.use(express.json());
+ 
+ app.get('/api/health', (_req, res) => {
+   res.json({ ok: true, service: 'livraria-api' });
+ });
+ 
+ app.use('/api/auth', authRouter);
+ app.use('/api/users', userRouter);
+ app.use('/api/books', bookRouter);
+ app.use('/api/authors', authorRouter);
+ app.use('/api/categories', categoryRouter);
++app.use('/api/subjects', subjectRouter);
++app.use('/api/knowledge-areas', knowledgeAreaRouter);
+ app.use('/api/readers', readerRouter);
+ app.use('/api/loans', loanRouter);
+ app.use('/api/reservations', reservationRouter);
+ app.use('/api/reports', reportRouter);
+ app.use('/api/audit', auditRouter);
+ app.use('/api/settings', settingsRouter);
+ app.use('/api/dashboard', dashboardRouter);
+ app.use('/api/backups', backupRouter);
+ 
+ app.use(notFoundHandler);
+diff --git a/backend/src/modules/book.routes.ts b/backend/src/modules/book.routes.ts
+index 635d230..41f5cea 100644
+--- a/backend/src/modules/book.routes.ts
++++ b/backend/src/modules/book.routes.ts
+@@ -7,20 +7,22 @@ import { requireAuth } from '../middleware/auth';
+ import { writeAudit } from '../lib/audit';
+ import { bookQuerySchema, bookSchema, cleanInt, cleanNull, normalizeIsbn, parse } from '../validation';
+ import { resolveBookMetadata } from '../lib/cover';
+ import { coverLimiter } from '../middleware/cover-rate-limit';
+ 
+ export const bookRouter = Router();
+ 
+ export const bookInclude = {
+   categories: { include: { category: true } },
+   authors: { include: { author: true } },
++  subjects: { include: { subject: true } },
++  knowledgeAreas: { include: { knowledgeArea: true } },
+ };
+ 
+ const ACTIVE_LOAN_STATUSES = ['ACTIVE', 'OVERDUE'];
+ 
+ async function resolveAuthorNames(
+   tx: Prisma.TransactionClient,
+   names: string[],
+ ): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
+   const ids: number[] = [];
+   const created: { id: number; name: string }[] = [];
+@@ -63,24 +65,78 @@ async function resolveCategoryNames(
+     } else {
+       const category = await tx.category.create({ data: { name } });
+       created.push({ id: category.id, name: category.name });
+       nameMap.set(key, category.id);
+       ids.push(category.id);
+     }
+   }
+   return { ids, created };
+ }
+ 
++async function resolveSubjectNames(
++  tx: Prisma.TransactionClient,
++  names: string[],
++): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
++  const ids: number[] = [];
++  const created: { id: number; name: string }[] = [];
++  if (names.length === 0) return { ids, created };
++  const all = await tx.subject.findMany({ select: { id: true, name: true } });
++  const nameMap = new Map(all.map((s) => [s.name.toLowerCase(), s.id]));
++  for (const raw of names) {
++    const name = raw.trim();
++    if (!name) continue;
++    const key = name.toLowerCase();
++    const existingId = nameMap.get(key);
++    if (existingId) {
++      ids.push(existingId);
++    } else {
++      const subject = await tx.subject.create({ data: { name } });
++      created.push({ id: subject.id, name: subject.name });
++      nameMap.set(key, subject.id);
++      ids.push(subject.id);
++    }
++  }
++  return { ids, created };
++}
++
++async function resolveKnowledgeAreaNames(
++  tx: Prisma.TransactionClient,
++  names: string[],
++): Promise<{ ids: number[]; created: { id: number; name: string }[] }> {
++  const ids: number[] = [];
++  const created: { id: number; name: string }[] = [];
++  if (names.length === 0) return { ids, created };
++  const all = await tx.knowledgeArea.findMany({ select: { id: true, name: true } });
++  const nameMap = new Map(all.map((k) => [k.name.toLowerCase(), k.id]));
++  for (const raw of names) {
++    const name = raw.trim();
++    if (!name) continue;
++    const key = name.toLowerCase();
++    const existingId = nameMap.get(key);
++    if (existingId) {
++      ids.push(existingId);
++    } else {
++      const knowledgeArea = await tx.knowledgeArea.create({ data: { name } });
++      created.push({ id: knowledgeArea.id, name: knowledgeArea.name });
++      nameMap.set(key, knowledgeArea.id);
++      ids.push(knowledgeArea.id);
++    }
++  }
++  return { ids, created };
++}
++
+ function mapBook(b: any, isAvailable: boolean) {
+   return {
+     ...b,
+     categories: (b.categories ?? []).map((c: any) => c.category),
++    subjects: (b.subjects ?? []).map((s: any) => s.subject),
++    knowledgeAreas: (b.knowledgeAreas ?? []).map((k: any) => k.knowledgeArea),
+     isAvailable,
+   };
+ }
+ 
+ async function loanedBookIds(): Promise<Set<number>> {
+   const loans = await prisma.loan.findMany({
+     where: { status: { in: ACTIVE_LOAN_STATUSES } },
+     select: { bookId: true },
+     distinct: ['bookId'],
+   });
+@@ -242,59 +298,90 @@ bookRouter.post(
+   asyncHandler(async (req, res) => {
+ const data = parse(bookSchema, req.body);
+     const duplicate = await findDuplicateBook(providedIsbns(data));
+     if (duplicate) {
+       duplicateConflict(res, duplicate);
+       return;
+     }
+     const result = await prisma.$transaction(async (tx) => {
+       const createdAuthors: { id: number; name: string }[] = [];
+       const createdCategories: { id: number; name: string }[] = [];
++      const createdSubjects: { id: number; name: string }[] = [];
++      const createdKnowledgeAreas: { id: number; name: string }[] = [];
+       const book = await tx.book.create({
+         data: {
+           title: data.title,
+           subtitle: cleanNull(data.subtitle),
+           isbn10: cleanNull(data.isbn10 ? normalizeIsbn(data.isbn10) : null),
+           isbn13: cleanNull(data.isbn13 ? normalizeIsbn(data.isbn13) : null),
+           description: cleanNull(data.description),
+           publisher: cleanNull(data.publisher),
+           edition: cleanInt(data.edition),
+           publicationYear: cleanInt(data.publicationYear),
+           language: cleanNull(data.language),
+           pages: cleanInt(data.pages),
+           coverUrl: cleanNull(data.coverUrl),
++          format: cleanNull(data.format),
++          volume: cleanNull(data.volume),
++          cdd: cleanNull(data.cdd),
++          cutter: cleanNull(data.cutter),
++          physicalLocation: cleanNull(data.physicalLocation),
++          availableCopies: cleanInt(data.availableCopies),
++          acquisitionType: cleanNull(data.acquisitionType),
+         },
+       });
+       if (data.authorIds.length > 0 || data.authorNames.length > 0) {
+         const resolved = await resolveAuthorNames(tx, data.authorNames);
+         const authorIds = [...new Set([...data.authorIds, ...resolved.ids])];
+         await tx.bookAuthor.createMany({
+           data: authorIds.map((authorId) => ({ bookId: book.id, authorId })),
+         });
+         createdAuthors.push(...resolved.created);
+       }
+       if (data.categoryIds.length > 0 || data.categoryNames.length > 0) {
+         const resolved = await resolveCategoryNames(tx, data.categoryNames);
+         const categoryIds = [...new Set([...data.categoryIds, ...resolved.ids])];
+         await tx.bookCategory.createMany({
+           data: categoryIds.map((categoryId) => ({ bookId: book.id, categoryId })),
+         });
+         createdCategories.push(...resolved.created);
+       }
+-      return { book, createdAuthors, createdCategories };
++      if (data.subjectIds.length > 0 || data.subjectNames.length > 0) {
++        const resolved = await resolveSubjectNames(tx, data.subjectNames);
++        const subjectIds = [...new Set([...data.subjectIds, ...resolved.ids])];
++        await tx.bookSubject.createMany({
++          data: subjectIds.map((subjectId) => ({ bookId: book.id, subjectId })),
++        });
++        createdSubjects.push(...resolved.created);
++      }
++      if (data.knowledgeAreaIds.length > 0 || data.knowledgeAreaNames.length > 0) {
++        const resolved = await resolveKnowledgeAreaNames(tx, data.knowledgeAreaNames);
++        const knowledgeAreaIds = [...new Set([...data.knowledgeAreaIds, ...resolved.ids])];
++        await tx.bookKnowledgeArea.createMany({
++          data: knowledgeAreaIds.map((knowledgeAreaId) => ({ bookId: book.id, knowledgeAreaId })),
++        });
++        createdKnowledgeAreas.push(...resolved.created);
++      }
++      return { book, createdAuthors, createdCategories, createdSubjects, createdKnowledgeAreas };
+     });
+     for (const a of result.createdAuthors) {
+       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
+     }
+     for (const c of result.createdCategories) {
+       await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+     }
++    for (const s of result.createdSubjects) {
++      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
++    }
++    for (const k of result.createdKnowledgeAreas) {
++      await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);
++    }
+     await writeAudit(req.user?.id, 'BOOK_CREATED', 'Book', result.book.id, { title: result.book.title }, req.ip);
+     const full = await prisma.book.findUnique({ where: { id: result.book.id }, include: bookInclude });
+     res.status(201).json(mapBook(full!, true));
+   }),
+ );
+ 
+ bookRouter.put(
+   '/:id',
+   requireAuth,
+   asyncHandler(async (req, res) => {
+@@ -302,62 +389,95 @@ const id = Number(req.params.id);
+     const data = parse(bookSchema, req.body);
+     const existing = await prisma.book.findUnique({ where: { id } });
+     if (!existing) throw new HttpError(404, 'Livro n├úo encontrado');
+     const duplicate = await findDuplicateBook(providedIsbns(data), id);
+     if (duplicate) {
+       duplicateConflict(res, duplicate);
+       return;
+     }
+ const createdAuthors: { id: number; name: string }[] = [];
+     const createdCategories: { id: number; name: string }[] = [];
++    const createdSubjects: { id: number; name: string }[] = [];
++    const createdKnowledgeAreas: { id: number; name: string }[] = [];
+     await prisma.$transaction(async (tx) => {
+       await tx.book.update({
+         where: { id },
+         data: {
+           title: data.title,
+           subtitle: cleanNull(data.subtitle),
+           isbn10: cleanNull(data.isbn10 ? normalizeIsbn(data.isbn10) : null),
+           isbn13: cleanNull(data.isbn13 ? normalizeIsbn(data.isbn13) : null),
+           description: cleanNull(data.description),
+           publisher: cleanNull(data.publisher),
+           edition: cleanInt(data.edition),
+           publicationYear: cleanInt(data.publicationYear),
+           language: cleanNull(data.language),
+           pages: cleanInt(data.pages),
+           coverUrl: cleanNull(data.coverUrl),
++          format: cleanNull(data.format),
++          volume: cleanNull(data.volume),
++          cdd: cleanNull(data.cdd),
++          cutter: cleanNull(data.cutter),
++          physicalLocation: cleanNull(data.physicalLocation),
++          availableCopies: cleanInt(data.availableCopies),
++          acquisitionType: cleanNull(data.acquisitionType),
+         },
+       });
+       await tx.bookAuthor.deleteMany({ where: { bookId: id } });
+       const resolved = await resolveAuthorNames(tx, data.authorNames);
+       const authorIds = [...new Set([...data.authorIds, ...resolved.ids])];
+       if (authorIds.length > 0) {
+         await tx.bookAuthor.createMany({
+           data: authorIds.map((authorId) => ({ bookId: id, authorId })),
+         });
+       }
+       createdAuthors.push(...resolved.created);
+       await tx.bookCategory.deleteMany({ where: { bookId: id } });
+       const resolvedCategories = await resolveCategoryNames(tx, data.categoryNames);
+       const categoryIds = [...new Set([...data.categoryIds, ...resolvedCategories.ids])];
+       if (categoryIds.length > 0) {
+         await tx.bookCategory.createMany({
+           data: categoryIds.map((categoryId) => ({ bookId: id, categoryId })),
+         });
+       }
+       createdCategories.push(...resolvedCategories.created);
++      await tx.bookSubject.deleteMany({ where: { bookId: id } });
++      const resolvedSubjects = await resolveSubjectNames(tx, data.subjectNames);
++      const subjectIds = [...new Set([...data.subjectIds, ...resolvedSubjects.ids])];
++      if (subjectIds.length > 0) {
++        await tx.bookSubject.createMany({
++          data: subjectIds.map((subjectId) => ({ bookId: id, subjectId })),
++        });
++      }
++      createdSubjects.push(...resolvedSubjects.created);
++      await tx.bookKnowledgeArea.deleteMany({ where: { bookId: id } });
++      const resolvedKnowledgeAreas = await resolveKnowledgeAreaNames(tx, data.knowledgeAreaNames);
++      const knowledgeAreaIds = [...new Set([...data.knowledgeAreaIds, ...resolvedKnowledgeAreas.ids])];
++      if (knowledgeAreaIds.length > 0) {
++        await tx.bookKnowledgeArea.createMany({
++          data: knowledgeAreaIds.map((knowledgeAreaId) => ({ bookId: id, knowledgeAreaId })),
++        });
++      }
++      createdKnowledgeAreas.push(...resolvedKnowledgeAreas.created);
+     });
+     for (const a of createdAuthors) {
+       await writeAudit(req.user?.id, 'AUTHOR_CREATED', 'Author', a.id, { name: a.name }, req.ip);
+     }
+     for (const c of createdCategories) {
+       await writeAudit(req.user?.id, 'CATEGORY_CREATED', 'Category', c.id, { name: c.name }, req.ip);
+     }
++    for (const s of createdSubjects) {
++      await writeAudit(req.user?.id, 'SUBJECT_CREATED', 'Subject', s.id, { name: s.name }, req.ip);
++    }
++    for (const k of createdKnowledgeAreas) {
++      await writeAudit(req.user?.id, 'KNOWLEDGE_AREA_CREATED', 'KnowledgeArea', k.id, { name: k.name }, req.ip);
++    }
+     await writeAudit(req.user?.id, 'BOOK_UPDATED', 'Book', id, { title: data.title }, req.ip);
+     const full = await prisma.book.findUnique({ where: { id }, include: bookInclude });
+     const activeLoans = await prisma.loan.count({
+       where: { bookId: id, status: { in: ACTIVE_LOAN_STATUSES } },
+     });
+     res.json(mapBook(full!, activeLoans === 0));
+   }),
+ );
+ 
+ bookRouter.delete(
+diff --git a/backend/src/modules/knowledge-area.routes.ts b/backend/src/modules/knowledge-area.routes.ts
+new file mode 100644
+index 0000000..1494884
+--- /dev/null
++++ b/backend/src/modules/knowledge-area.routes.ts
+@@ -0,0 +1,13 @@
++import { Router } from 'express';
++import prisma from '../lib/prisma';
++import { asyncHandler } from '../middleware/async-handler';
++
++export const knowledgeAreaRouter = Router();
++
++knowledgeAreaRouter.get(
++  '/',
++  asyncHandler(async (_req, res) => {
++    const items = await prisma.knowledgeArea.findMany({ orderBy: { name: 'asc' } });
++    res.json({ items, total: items.length, page: 1, pageSize: items.length, totalPages: 1 });
++  }),
++);
+diff --git a/backend/src/modules/subject.routes.ts b/backend/src/modules/subject.routes.ts
+new file mode 100644
+index 0000000..a442312
+--- /dev/null
++++ b/backend/src/modules/subject.routes.ts
+@@ -0,0 +1,13 @@
++import { Router } from 'express';
++import prisma from '../lib/prisma';
++import { asyncHandler } from '../middleware/async-handler';
++
++export const subjectRouter = Router();
++
++subjectRouter.get(
++  '/',
++  asyncHandler(async (_req, res) => {
++    const items = await prisma.subject.findMany({ orderBy: { name: 'asc' } });
++    res.json({ items, total: items.length, page: 1, pageSize: items.length, totalPages: 1 });
++  }),
++);
+diff --git a/backend/src/validation.ts b/backend/src/validation.ts
+index bf3a4d1..effb441 100644
+--- a/backend/src/validation.ts
++++ b/backend/src/validation.ts
+@@ -116,20 +116,34 @@ export const bookSchema = z.object({
+   publisher: strOpt,
+   edition: intOpt,
+   publicationYear: intOpt,
+   language: strOpt,
+   pages: intOpt,
+   coverUrl: strOpt,
+   categoryIds: z.array(z.number().int()).default([]),
+   categoryNames: z.array(z.string().trim().min(2, 'nome de categoria muito curto').max(120)).default([]),
+   authorIds: z.array(z.number().int()).default([]),
+   authorNames: z.array(z.string().trim().min(2, 'nome de autor muito curto').max(120)).default([]),
++  format: z.enum(['CAPA', 'BROCHURA', 'ESPIRAL']).optional(),
++  volume: strOpt,
++  cdd: strOpt,
++  cutter: strOpt,
++  physicalLocation: strOpt,
++  availableCopies: intOpt,
++  acquisitionType: z.enum([
++    'COMPRA', 'DOACAO', 'REPOSICAO', 'PRODUCAO_INTERNA',
++    'TROCA', 'EMPRESTIMO_BIBLIOTECAS', 'LICITACAO', 'PERMUTA', 'CONVENIO',
++  ]).optional(),
++  subjectNames: z.array(z.string().trim().min(2, 'nome de assunto muito curto').max(120)).default([]),
++  subjectIds: z.array(z.number().int()).default([]),
++  knowledgeAreaNames: z.array(z.string().trim().min(2, 'nome de area muito curto').max(120)).default([]),
++  knowledgeAreaIds: z.array(z.number().int()).default([]),
+ });
+ 
+ export const authorSchema = z.object({
+   name: z.string().trim().min(2, 'nome obrigat├│rio'),
+   isActive: z.boolean().optional(),
+ });
+ 
+ export const authorStatusSchema = z.object({
+   isActive: z.boolean(),
+ });
+diff --git a/frontend/src/features/api.ts b/frontend/src/features/api.ts
+index 661136b..0350673 100644
+--- a/frontend/src/features/api.ts
++++ b/frontend/src/features/api.ts
+@@ -10,20 +10,22 @@ import type {
+   Category,
+   DashboardData,
+   LibrarySettings,
+   Loan,
+   Paginated,
+   Reader,
+   ReaderDetail,
+   ReportResult,
+   ReportType,
+   Reservation,
++  Subject,
++  KnowledgeArea,
+   User,
+ } from '../types/api';
+ 
+ type Params = Record<string, string | number | undefined>;
+ 
+ function cleanPayload<T extends Record<string, unknown>>(obj: T): T {
+   const out = {} as T;
+   for (const [k, v] of Object.entries(obj)) {
+     if (v !== '' && v !== null && v !== undefined) out[k as keyof T] = v as T[keyof T];
+   }
+@@ -36,24 +38,35 @@ function toBookPayload(v: BookFormValues) {
+     subtitle: v.subtitle,
+     isbn10: v.isbn10,
+     isbn13: v.isbn13,
+     description: v.description,
+     publisher: v.publisher,
+     edition: v.edition ? Number(v.edition) : undefined,
+     publicationYear: v.publicationYear ? Number(v.publicationYear) : undefined,
+     language: v.language,
+     pages: v.pages ? Number(v.pages) : undefined,
+     coverUrl: v.coverUrl,
++    format: v.format || undefined,
++    volume: v.volume,
++    cdd: v.cdd,
++    cutter: v.cutter,
++    physicalLocation: v.physicalLocation,
++    availableCopies: v.availableCopies ? Number(v.availableCopies) : undefined,
++    acquisitionType: v.acquisitionType || undefined,
+     categoryIds: v.categories.filter((c) => c.id != null).map((c) => c.id as number),
+     categoryNames: v.categories.filter((c) => c.id == null).map((c) => c.name),
+     authorIds: v.authors.filter((a) => a.id != null).map((a) => a.id as number),
+     authorNames: v.authors.filter((a) => a.id == null).map((a) => a.name),
++    subjectIds: v.subjects.filter((s) => s.id != null).map((s) => s.id as number),
++    subjectNames: v.subjects.filter((s) => s.id == null).map((s) => s.name),
++    knowledgeAreaIds: v.knowledgeAreas.filter((k) => k.id != null).map((k) => k.id as number),
++    knowledgeAreaNames: v.knowledgeAreas.filter((k) => k.id == null).map((k) => k.name),
+   });
+ }
+ 
+ export const booksApi = {
+   list: (params?: Params) => api.get<Paginated<Book>>('/books', { params }).then((r) => r.data),
+   get: (id: number) => api.get<Book>(`/books/${id}`).then((r) => r.data),
+   create: (v: BookFormValues) => api.post<Book>('/books', toBookPayload(v)).then((r) => r.data),
+   update: (id: number, v: BookFormValues) =>
+     api.put<Book>(`/books/${id}`, toBookPayload(v)).then((r) => r.data),
+   archive: (id: number) => api.delete(`/books/${id}`).then((r) => r.data),
+@@ -98,20 +111,28 @@ export const categoriesApi = {
+       .get<Paginated<Category>>('/categories', { params: includeInactive ? { all: 1 } : {} })
+       .then((r) => r.data.items),
+   create: (v: { name: string; description?: string }) =>
+     api.post<Category>('/categories', v).then((r) => r.data),
+   update: (id: number, v: { name: string; description?: string }) =>
+     api.put<Category>(`/categories/${id}`, v).then((r) => r.data),
+   deactivate: (id: number) => api.patch(`/categories/${id}/status`, { status: 'INACTIVE' }).then((r) => r.data),
+   reactivate: (id: number) => api.patch(`/categories/${id}/status`, { status: 'ACTIVE' }).then((r) => r.data),
+ };
+ 
++export const subjectsApi = {
++  all: () => api.get<Paginated<Subject>>('/subjects').then((r) => r.data.items),
++};
++
++export const knowledgeAreasApi = {
++  all: () => api.get<Paginated<KnowledgeArea>>('/knowledge-areas').then((r) => r.data.items),
++};
++
+ export const readersApi = {
+   list: (params?: Params) => api.get<Paginated<Reader>>('/readers', { params }).then((r) => r.data),
+   get: (id: number) => api.get<ReaderDetail>(`/readers/${id}`).then((r) => r.data),
+   create: (v: Record<string, unknown>) =>
+     api.post<Reader>('/readers', cleanPayload(v)).then((r) => r.data),
+   update: (id: number, v: Record<string, unknown>) =>
+     api.put<Reader>(`/readers/${id}`, cleanPayload(v)).then((r) => r.data),
+   block: (id: number, reason?: string, category?: string) =>
+     api.patch<Reader>(`/readers/${id}/status`, { status: 'BLOCKED', reason, category }).then((r) => r.data),
+   unblock: (id: number) =>
+diff --git a/frontend/src/pages/admin/book-form.tsx b/frontend/src/pages/admin/book-form.tsx
+index e924b08..2670455 100644
+--- a/frontend/src/pages/admin/book-form.tsx
++++ b/frontend/src/pages/admin/book-form.tsx
+@@ -1,79 +1,283 @@
+ import { useNavigate, useParams, Link } from 'react-router-dom';
+ import { ArrowLeft, BookOpen, Check, Save, X } from 'lucide-react';
+ import { useEffect, useMemo, useState } from 'react';
+ import { useForm } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Button } from '../../components/ui/button';
+ import { Card, CardContent } from '../../components/ui/card';
+ import { FieldError, Label } from '../../components/ui/form-field';
+ import { Input } from '../../components/ui/input';
++import { NativeSelect } from '../../components/ui/select';
+ import { Skeleton } from '../../components/ui/skeleton';
+ import { Textarea } from '../../components/ui/textarea';
+-import { authorsApi, booksApi, categoriesApi } from '../../features/api';
++import { authorsApi, booksApi, categoriesApi, knowledgeAreasApi, subjectsApi } from '../../features/api';
+ import { useToast } from '../../features/toast/toast-provider';
+ import { apiErrorMessage } from '../../lib/errors';
+ import { isValidIsbn10, isValidIsbn13 } from '../../lib/isbn';
+-import type { Author, Book, BookFormValues, BookRef, Category } from '../../types/api';
++import type {
++  Author,
++  Book,
++  BookFormValues,
++  BookRef,
++  Category,
++  KnowledgeArea,
++  Subject,
++} from '../../types/api';
+ 
+ const DUPLICATE_MESSAGE: Record<'isbn10' | 'isbn13', string> = {
+   isbn10: 'J├í existe um livro cadastrado com este ISBN-10.',
+   isbn13: 'J├í existe um livro cadastrado com este ISBN-13.',
+ };
+ 
++const FORMAT_OPTIONS = [
++  { value: '', label: 'ÔÇö' },
++  { value: 'CAPA', label: 'Capa' },
++  { value: 'BROCHURA', label: 'Brochura' },
++  { value: 'ESPIRAL', label: 'Espiral' },
++];
++
++const ACQUISITION_OPTIONS = [
++  { value: '', label: 'ÔÇö' },
++  { value: 'COMPRA', label: 'Compra' },
++  { value: 'DOACAO', label: 'Doa├º├úo' },
++  { value: 'REPOSICAO', label: 'Reposi├º├úo' },
++  { value: 'PRODUCAO_INTERNA', label: 'Produ├º├úo Interna' },
++  { value: 'TROCA', label: 'Troca' },
++  { value: 'EMPRESTIMO_BIBLIOTECAS', label: 'Empr├®stimo entre Bibliotecas' },
++  { value: 'LICITACAO', label: 'Licita├º├úo' },
++  { value: 'PERMUTA', label: 'Permuta' },
++  { value: 'CONVENIO', label: 'Conv├¬nio' },
++];
++
++const tagValue = z.object({ id: z.number().nullable(), name: z.string().trim().min(1) });
++
+ const schema = z.object({
+   title: z.string().min(1, 'T├¡tulo ├® obrigat├│rio'),
+   subtitle: z.string(),
+   isbn10: z.string().refine((v) => v === '' || isValidIsbn10(v), 'Informe um ISBN-10 v├ílido.'),
+   isbn13: z.string().refine((v) => v === '' || isValidIsbn13(v), 'Informe um ISBN-13 v├ílido.'),
+   description: z.string(),
+   publisher: z.string(),
+   edition: z.string(),
+   publicationYear: z.string(),
+   language: z.string(),
+   pages: z.string(),
+   coverUrl: z.string(),
+-  categories: z.array(z.object({ id: z.number().nullable(), name: z.string().trim().min(1) })),
+-  authors: z
+-    .array(z.object({ id: z.number().nullable(), name: z.string().trim().min(1) }))
+-    .min(1, 'Informe ao menos um autor'),
++  format: z.enum(['', 'CAPA', 'BROCHURA', 'ESPIRAL']),
++  volume: z.string(),
++  cdd: z.string(),
++  cutter: z.string(),
++  physicalLocation: z.string(),
++  availableCopies: z.string(),
++  acquisitionType: z.enum([
++    '',
++    'COMPRA',
++    'DOACAO',
++    'REPOSICAO',
++    'PRODUCAO_INTERNA',
++    'TROCA',
++    'EMPRESTIMO_BIBLIOTECAS',
++    'LICITACAO',
++    'PERMUTA',
++    'CONVENIO',
++  ]),
++  categories: z.array(tagValue),
++  authors: z.array(tagValue).min(1, 'Informe ao menos um autor'),
++  subjects: z.array(tagValue),
++  knowledgeAreas: z.array(tagValue),
+ });
+ 
++interface TagOption {
++  id: number;
++  name: string;
++}
++
++interface TagInputFieldProps {
++  label: string;
++  helpText?: string;
++  placeholder: string;
++  options: TagOption[];
++  value: { id: number | null; name: string }[];
++  onChange: (next: { id: number | null; name: string }[]) => void;
++  error?: string;
++}
++
++function TagInputField({ label, helpText, placeholder, options, value, onChange, error }: TagInputFieldProps) {
++  const [input, setInput] = useState('');
++  const [open, setOpen] = useState(false);
++
++  const selectedIds = useMemo(
++    () => new Set(value.filter((v) => v.id != null).map((v) => v.id)),
++    [value],
++  );
++  const suggestions = useMemo(() => {
++    const q = input.trim().toLowerCase();
++    if (!q) return [];
++    const rank = (o: TagOption) =>
++      o.name.toLowerCase() === q ? 0 : o.name.toLowerCase().startsWith(q) ? 1 : 2;
++    return options
++      .filter((o) => !selectedIds.has(o.id))
++      .filter((o) => !value.some((v) => v.name.toLowerCase() === o.name.toLowerCase()))
++      .filter((o) => o.name.toLowerCase().includes(q))
++      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
++      .slice(0, 6);
++  }, [options, input, selectedIds, value]);
++
++  const addNames = (raw: string) => {
++    const parts = raw
++      .split(',')
++      .map((s) => s.trim())
++      .filter(Boolean);
++    if (parts.length === 0) {
++      setOpen(false);
++      return;
++    }
++    const next = [...value];
++    for (const part of parts) {
++      if (next.some((v) => v.name.toLowerCase() === part.toLowerCase())) continue;
++      const matched = options.find((o) => o.name.toLowerCase() === part.toLowerCase());
++      next.push(matched ? { id: matched.id, name: matched.name } : { id: null as number | null, name: part });
++    }
++    onChange(next);
++    setInput('');
++    setOpen(false);
++  };
++
++  const removeAt = (index: number) => onChange(value.filter((_, i) => i !== index));
++
++  return (
++    <div>
++      <Label>{label}</Label>
++      {helpText && <p className="mb-3 text-[12.5px] text-muted">{helpText}</p>}
++      <div className="relative">
++        <Input
++          value={input}
++          onChange={(e) => {
++            const v = e.target.value;
++            if (v.endsWith(',') || (v.includes(',') && v.trim().length > 1)) addNames(v);
++            else {
++              setInput(v);
++              setOpen(true);
++            }
++          }}
++          onFocus={() => setOpen(true)}
++          onBlur={() => setTimeout(() => setOpen(false), 150)}
++          onKeyDown={(e) => {
++            if (e.key === 'Enter') {
++              e.preventDefault();
++              if (suggestions.length > 0 && !input.includes(',')) addNames(suggestions[0].name);
++              else addNames(input);
++            } else if (e.key === 'Escape') {
++              setOpen(false);
++            }
++          }}
++          placeholder={placeholder}
++        />
++        {open && suggestions.length > 0 && (
++          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-control bg-surface shadow-card hairline">
++            {suggestions.map((o) => (
++              <button
++                key={o.id}
++                type="button"
++                onMouseDown={(e) => {
++                  e.preventDefault();
++                  addNames(o.name);
++                }}
++                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[13.5px] font-semibold text-ink transition-colors duration-150 hover:bg-surfaceWarm"
++              >
++                <Check className="size-3.5 text-primary" />
++                {o.name}
++              </button>
++            ))}
++          </div>
++        )}
++      </div>
++      {value.length > 0 && (
++        <div className="mt-3 flex flex-wrap gap-2">
++          {value.map((v, i) => (
++            <span
++              key={`${v.name}-${i}`}
++              className={`inline-flex items-center gap-1.5 rounded-full py-1.5 pl-3.5 pr-1.5 text-[13px] font-semibold transition-all duration-200 [transition-timing-function:var(--ease)] ${
++                v.id == null
++                  ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-300'
++                  : 'bg-primary text-white shadow-card'
++              }`}
++            >
++              {v.name}
++              {v.id == null && (
++                <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
++                  novo
++                </span>
++              )}
++              <button
++                type="button"
++                onClick={() => removeAt(i)}
++                aria-label={`Remover ${v.name}`}
++                className={`rounded-full p-1 transition-colors duration-150 ${
++                  v.id == null ? 'hover:bg-amber-100' : 'hover:bg-primary-dark'
++                }`}
++              >
++                <X className="size-3" />
++              </button>
++            </span>
++          ))}
++        </div>
++      )}
++      {error && <FieldError message={error} />}
++    </div>
++  );
++}
++
++function SectionTitle({ children }: { children: string }) {
++  return (
++    <h2 className="mb-4 border-b border-black/5 pb-2 text-[15px] font-extrabold uppercase tracking-wide text-muted">
++      {children}
++    </h2>
++  );
++}
++
+ export function BookFormPage() {
+   const { id } = useParams<{ id: string }>();
+   const isEdit = Boolean(id);
+   const navigate = useNavigate();
+   const { toast } = useToast();
+ 
+   const [book, setBook] = useState<Book | null>(null);
+   const [authors, setAuthors] = useState<Author[]>([]);
+   const [categories, setCategories] = useState<Category[]>([]);
++  const [subjects, setSubjects] = useState<Subject[]>([]);
++  const [knowledgeAreas, setKnowledgeAreas] = useState<KnowledgeArea[]>([]);
+   const [loading, setLoading] = useState(isEdit);
+   const [submitting, setSubmitting] = useState(false);
+   const [coverState, setCoverState] = useState<'idle' | 'searching' | 'notfound'>('idle');
+   const [duplicate, setDuplicate] = useState<{ field: 'isbn10' | 'isbn13'; book: BookRef } | null>(null);
+ 
+   const { register, handleSubmit, setValue, watch, reset, setError, clearErrors, formState: { errors } } = useForm<BookFormValues>({
+     resolver: zodResolver(schema),
+     defaultValues: {
+       title: '', subtitle: '', isbn10: '', isbn13: '', description: '', publisher: '',
+       edition: '', publicationYear: '', language: 'Portugu├¬s', pages: '', coverUrl: '',
+-      categories: [], authors: [],
++      format: '', volume: '', cdd: '', cutter: '', physicalLocation: '',
++      availableCopies: '', acquisitionType: '',
++      categories: [], authors: [], subjects: [], knowledgeAreas: [],
+     },
+   });
+ 
+   useEffect(() => {
+-    Promise.all([authorsApi.all(), categoriesApi.all()])
+-      .then(([a, c]) => {
++    Promise.all([authorsApi.all(), categoriesApi.all(), subjectsApi.all(), knowledgeAreasApi.all()])
++      .then(([a, c, s, k]) => {
+         setAuthors(a);
+         setCategories(c);
++        setSubjects(s);
++        setKnowledgeAreas(k);
+       })
+       .catch(() => undefined);
+   }, []);
+ 
+   useEffect(() => {
+     if (!isEdit) return;
+     booksApi
+       .get(Number(id))
+       .then((b) => {
+         setBook(b);
+@@ -82,122 +286,44 @@ export function BookFormPage() {
+           subtitle: b.subtitle ?? '',
+           isbn10: b.isbn10 ?? '',
+           isbn13: b.isbn13 ?? '',
+           description: b.description ?? '',
+           publisher: b.publisher ?? '',
+           edition: b.edition ? String(b.edition) : '',
+           publicationYear: b.publicationYear ? String(b.publicationYear) : '',
+           language: b.language ?? 'Portugu├¬s',
+           pages: b.pages ? String(b.pages) : '',
+           coverUrl: b.coverUrl ?? '',
++          format: b.format ?? '',
++          volume: b.volume ?? '',
++          cdd: b.cdd ?? '',
++          cutter: b.cutter ?? '',
++          physicalLocation: b.physicalLocation ?? '',
++          availableCopies: b.availableCopies != null ? String(b.availableCopies) : '',
++          acquisitionType: b.acquisitionType ?? '',
+           categories: b.categories.map((c) => ({ id: c.id, name: c.name })),
+           authors: b.authors.map((a) => ({ id: a.author.id, name: a.author.name })),
++          subjects: b.subjects.map((s) => ({ id: s.id, name: s.name })),
++          knowledgeAreas: b.knowledgeAreas.map((k) => ({ id: k.id, name: k.name })),
+         });
+       })
+       .catch((err) => {
+         toast('error', 'N├úo foi poss├¡vel carregar o livro', apiErrorMessage(err));
+         navigate('/admin/livros');
+       })
+       .finally(() => setLoading(false));
+   }, [id, isEdit, reset, navigate, toast]);
+ 
+   const authorsField = watch('authors');
+-  const [authorInput, setAuthorInput] = useState('');
+-  const [authorOpen, setAuthorOpen] = useState(false);
+   const categoriesField = watch('categories');
+-  const [categoryInput, setCategoryInput] = useState('');
+-  const [categoryOpen, setCategoryOpen] = useState(false);
+-  const selectedCategoryIds = useMemo(
+-    () => new Set(categoriesField.filter((c) => c.id != null).map((c) => c.id)),
+-    [categoriesField],
+-  );
+-  const categorySuggestions = useMemo(() => {
+-    const q = categoryInput.trim().toLowerCase();
+-    if (!q) return [];
+-    const rank = (c: Category) =>
+-      c.name.toLowerCase() === q ? 0 : c.name.toLowerCase().startsWith(q) ? 1 : 2;
+-    return categories
+-      .filter((c) => !selectedCategoryIds.has(c.id))
+-      .filter((c) => !categoriesField.some((s) => s.name.toLowerCase() === c.name.toLowerCase()))
+-      .filter((c) => c.name.toLowerCase().includes(q))
+-      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+-      .slice(0, 6);
+-  }, [categories, categoryInput, selectedCategoryIds, categoriesField]);
+-
+-  const addCategoryNames = (raw: string) => {
+-    const parts = raw
+-      .split(',')
+-      .map((s) => s.trim())
+-      .filter(Boolean);
+-    if (parts.length === 0) {
+-      setCategoryOpen(false);
+-      return;
+-    }
+-    const next = [...categoriesField];
+-    for (const part of parts) {
+-      if (next.some((c) => c.name.toLowerCase() === part.toLowerCase())) continue;
+-      const matched = categories.find((c) => c.name.toLowerCase() === part.toLowerCase());
+-      next.push(matched ? { id: matched.id, name: matched.name } : { id: null as number | null, name: part });
+-    }
+-    setValue('categories', next);
+-    setCategoryInput('');
+-    setCategoryOpen(false);
+-  };
+-
+-  const removeCategory = (index: number) => {
+-    setValue(
+-      'categories',
+-      categoriesField.filter((_, i) => i !== index),
+-    );
+-  };
+-  const selectedAuthorIds = useMemo(
+-    () => new Set(authorsField.filter((a) => a.id != null).map((a) => a.id)),
+-    [authorsField],
+-  );
+-  const suggestions = useMemo(() => {
+-    const q = authorInput.trim().toLowerCase();
+-    if (!q) return [];
+-    const rank = (a: Author) =>
+-      a.name.toLowerCase() === q ? 0 : a.name.toLowerCase().startsWith(q) ? 1 : 2;
+-    return authors
+-      .filter((a) => !selectedAuthorIds.has(a.id))
+-      .filter((a) => a.name.toLowerCase().includes(q))
+-      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+-      .slice(0, 6);
+-  }, [authors, authorInput, selectedAuthorIds]);
+-
+-  const addAuthorNames = (raw: string) => {
+-    const parts = raw
+-      .split(',')
+-      .map((s) => s.trim())
+-      .filter(Boolean);
+-    if (parts.length === 0) {
+-      setAuthorOpen(false);
+-      return;
+-    }
+-    const next = [...authorsField];
+-    for (const part of parts) {
+-      if (next.some((a) => a.name.toLowerCase() === part.toLowerCase())) continue;
+-      const matched = authors.find((a) => a.name.toLowerCase() === part.toLowerCase());
+-      next.push(matched ? { id: matched.id, name: matched.name } : { id: null as number | null, name: part });
+-    }
+-    setValue('authors', next);
+-    setAuthorInput('');
+-    setAuthorOpen(false);
+-  };
+-
+-  const removeAuthor = (index: number) => {
+-    setValue(
+-      'authors',
+-      authorsField.filter((_, i) => i !== index),
+-    );
+-  };
++  const subjectsField = watch('subjects');
++  const knowledgeAreasField = watch('knowledgeAreas');
+ 
+   const isbn10 = watch('isbn10');
+   const isbn13 = watch('isbn13');
+   const coverUrl = watch('coverUrl');
+ 
+   useEffect(() => {
+     const candidate = [isbn10, isbn13]
+       .map((v) => v.trim())
+       .find((v) => isValidIsbn10(v) || isValidIsbn13(v));
+     if (!candidate || coverUrl.trim() !== '') return;
+@@ -331,31 +457,24 @@ export function BookFormPage() {
+           </h1>
+           <p className="mt-1 text-[13.5px] text-muted">
+             {isEdit ? `Editando "${book?.title}"` : 'Cadastre um novo t├¡tulo no acervo.'}
+           </p>
+         </div>
+         <Button variant="secondary" onClick={() => navigate(-1)}>
+           <ArrowLeft className="size-4" /> Voltar
+         </Button>
+       </div>
+ 
+-      <form
+-        onSubmit={(e) => {
+-          e.preventDefault();
+-          if (authorInput.trim()) addAuthorNames(authorInput);
+-          if (categoryInput.trim()) addCategoryNames(categoryInput);
+-          void handleSubmit(submit)(e);
+-        }}
+-        className="space-y-5"
+-      >
++      <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(submit)(e); }} className="space-y-5">
+         <Card>
+           <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>Identifica├º├úo</SectionTitle>
+             <div className="sm:col-span-2">
+               <Label htmlFor="title">T├¡tulo *</Label>
+               <Input id="title" placeholder="Dom Casmurro" error={errors.title?.message} {...register('title')} />
+             </div>
+             <div>
+               <Label htmlFor="subtitle">Subt├¡tulo</Label>
+               <Input id="subtitle" placeholder="Mem├│rias p├│stumas de um cap├¡tulo" {...register('subtitle')} />
+             </div>
+             <div>
+               <Label htmlFor="isbn10">ISBN-10</Label>
+@@ -381,218 +500,159 @@ export function BookFormPage() {
+                 </div>
+                 <Link
+                   to={`/livros/${duplicate.book.id}`}
+                   state={{ fromAdmin: true }}
+                   className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-bold text-white transition-colors hover:bg-primary-dark"
+                 >
+                   <BookOpen className="size-4" /> Ver livro
+                 </Link>
+               </div>
+             )}
+-            <div className="sm:col-span-2">
+-              <Label htmlFor="description">Descri├º├úo</Label>
+-              <Textarea id="description" rows={4} placeholder="Sinopse do livro..." {...register('description')} />
+-            </div>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>Publica├º├úo</SectionTitle>
+             <div>
+               <Label htmlFor="publisher">Editora</Label>
+               <Input id="publisher" placeholder="Companhia das Letras" {...register('publisher')} />
+             </div>
+             <div>
+-              <Label htmlFor="language">Idioma</Label>
+-              <Input id="language" placeholder="Portugu├¬s" {...register('language')} />
++              <Label htmlFor="publicationYear">Ano de publica├º├úo</Label>
++              <Input id="publicationYear" type="number" min={1000} max={2100} placeholder="1899" {...register('publicationYear')} />
+             </div>
+             <div>
+               <Label htmlFor="edition">Edi├º├úo</Label>
+               <Input id="edition" type="number" min={1} placeholder="1" {...register('edition')} />
+             </div>
+             <div>
+-              <Label htmlFor="publicationYear">Ano de publica├º├úo</Label>
+-              <Input id="publicationYear" type="number" min={1000} max={2100} placeholder="1899" {...register('publicationYear')} />
++              <Label htmlFor="volume">Volume</Label>
++              <Input id="volume" placeholder="Vol. 1" {...register('volume')} />
++            </div>
++            <div>
++              <Label htmlFor="language">Idioma</Label>
++              <Input id="language" placeholder="Portugu├¬s" {...register('language')} />
+             </div>
+             <div>
+               <Label htmlFor="pages">P├íginas</Label>
+               <Input id="pages" type="number" min={1} placeholder="256" {...register('pages')} />
+             </div>
+             <div>
++              <Label htmlFor="format">Formato f├¡sico</Label>
++              <NativeSelect
++                value={watch('format')}
++                onChange={(v) => setValue('format', v)}
++                options={FORMAT_OPTIONS}
++              />
++            </div>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>Cataloga├º├úo</SectionTitle>
++            <div>
++              <Label htmlFor="cdd">CDD</Label>
++              <Input id="cdd" placeholder="869.3" {...register('cdd')} />
++            </div>
++            <div>
++              <Label htmlFor="cutter">Cutter</Label>
++              <Input id="cutter" placeholder="M338d" {...register('cutter')} />
++            </div>
++            <div className="sm:col-span-2">
++              <TagInputField
++                label="Assuntos"
++                helpText="Digite os assuntos separados por v├¡rgulas (ex.: romance, literatura brasileira). Assuntos ainda n├úo cadastrados s├úo criados ao salvar."
++                placeholder="Nome do assunto..."
++                options={subjects}
++                value={subjectsField}
++                onChange={(next) => setValue('subjects', next)}
++              />
++            </div>
++            <div className="sm:col-span-2">
++              <TagInputField
++                label="├ürea de Conhecimento"
++                helpText="Digite as ├íreas separadas por v├¡rgulas (ex.: Ci├¬ncias Humanas, Exatas). ├üreas ainda n├úo cadastradas s├úo criadas ao salvar."
++                placeholder="Nome da ├írea..."
++                options={knowledgeAreas}
++                value={knowledgeAreasField}
++                onChange={(next) => setValue('knowledgeAreas', next)}
++              />
++            </div>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>Acervo e Localiza├º├úo</SectionTitle>
++            <div>
++              <Label htmlFor="availableCopies">C├│pias dispon├¡veis</Label>
++              <Input id="availableCopies" type="number" min={0} placeholder="1" {...register('availableCopies')} />
++            </div>
++            <div>
++              <Label htmlFor="physicalLocation">Localiza├º├úo f├¡sica</Label>
++              <Input id="physicalLocation" placeholder="Prateleira B3, Corredor 2" {...register('physicalLocation')} />
++            </div>
++            <div>
++              <Label htmlFor="acquisitionType">Tipo de aquisi├º├úo</Label>
++              <NativeSelect
++                value={watch('acquisitionType')}
++                onChange={(v) => setValue('acquisitionType', v)}
++                options={ACQUISITION_OPTIONS}
++              />
++            </div>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>Descri├º├úo e Capa</SectionTitle>
++            <div className="sm:col-span-2">
++              <Label htmlFor="description">Descri├º├úo</Label>
++              <Textarea id="description" rows={4} placeholder="Sinopse do livro..." {...register('description')} />
++            </div>
++            <div className="sm:col-span-2">
+               <Label htmlFor="coverUrl">URL da capa</Label>
+               <Input id="coverUrl" placeholder="https://covers.openlibrary.org/..." {...register('coverUrl')} />
+               {coverState === 'searching' && (
+                 <p className="mt-1 text-[12px] text-muted">Buscando capa pelo ISBN na Amazon...</p>
+               )}
+               {coverState === 'notfound' && (
+                 <p className="mt-1 text-[12px] text-muted">
+                   Capa n├úo encontrada automaticamente. Preencha manualmente, se desejar.
+                 </p>
+               )}
+             </div>
+           </CardContent>
+         </Card>
+ 
+         <Card>
+-          <CardContent>
+-            <Label>Categorias</Label>
+-            <p className="mb-3 text-[12.5px] text-muted">
+-              Digite as categorias separadas por v├¡rgulas (ex.: viagem, advocacia, a├º├úo). Categorias ainda
+-              n├úo cadastradas s├úo criadas ao salvar.
+-            </p>
+-            <div className="relative">
+-              <Input
+-                value={categoryInput}
+-                onChange={(e) => {
+-                  setCategoryInput(e.target.value);
+-                  setCategoryOpen(true);
+-                }}
+-                onFocus={() => setCategoryOpen(true)}
+-                onBlur={() => setTimeout(() => setCategoryOpen(false), 150)}
+-                onKeyDown={(e) => {
+-                  if (e.key === 'Enter') {
+-                    e.preventDefault();
+-                    if (categorySuggestions.length > 0 && !categoryInput.includes(',')) addCategoryNames(categorySuggestions[0].name);
+-                    else addCategoryNames(categoryInput);
+-                  } else if (e.key === 'Escape') {
+-                    setCategoryOpen(false);
+-                  }
+-                }}
+-                placeholder="Nome da categoria..."
+-              />
+-              {categoryOpen && categorySuggestions.length > 0 && (
+-                <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-control bg-surface shadow-card hairline">
+-                  {categorySuggestions.map((c) => (
+-                    <button
+-                      key={c.id}
+-                      type="button"
+-                      onMouseDown={(e) => {
+-                        e.preventDefault();
+-                        addCategoryNames(c.name);
+-                      }}
+-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[13.5px] font-semibold text-ink transition-colors duration-150 hover:bg-surfaceWarm"
+-                    >
+-                      <Check className="size-3.5 text-primary" />
+-                      {c.name}
+-                    </button>
+-                  ))}
+-                </div>
+-              )}
+-            </div>
+-            {categoriesField.length > 0 && (
+-              <div className="mt-3 flex flex-wrap gap-2">
+-                {categoriesField.map((c, i) => (
+-                  <span
+-                    key={`${c.name}-${i}`}
+-                    className={`inline-flex items-center gap-1.5 rounded-full py-1.5 pl-3.5 pr-1.5 text-[13px] font-semibold transition-all duration-200 [transition-timing-function:var(--ease)] ${
+-                      c.id == null
+-                        ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-300'
+-                        : 'bg-primary text-white shadow-card'
+-                    }`}
+-                  >
+-                    {c.name}
+-                    {c.id == null && (
+-                      <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+-                        novo
+-                      </span>
+-                    )}
+-                    <button
+-                      type="button"
+-                      onClick={() => removeCategory(i)}
+-                      aria-label={`Remover categoria ${c.name}`}
+-                      className={`rounded-full p-1 transition-colors duration-150 ${
+-                        c.id == null ? 'hover:bg-amber-100' : 'hover:bg-primary-dark'
+-                      }`}
+-                    >
+-                      <X className="size-3" />
+-                    </button>
+-                  </span>
+-                ))}
+-              </div>
+-            )}
+-          </CardContent>
+-        </Card>
+-
+-        <Card>
+-          <CardContent>
+-            <Label>Autores</Label>
+-            <p className="mb-3 text-[12.5px] text-muted">
+-              Digite os autores separados por v├¡rgulas (ex.: Shawn Peters, Vibrant Publishers). Nomes ainda n├úo
+-              cadastrados s├úo criados ao salvar.
+-            </p>
+-            <div className="relative">
+-              <Input
+-                value={authorInput}
+-                onChange={(e) => {
+-                  const v = e.target.value;
+-                  if (v.endsWith(',') || (v.includes(',') && v.trim().length > 1)) addAuthorNames(v);
+-                  else { setAuthorInput(v); setAuthorOpen(true); }
+-                }}
+-                onFocus={() => setAuthorOpen(true)}
+-                onBlur={() => setTimeout(() => setAuthorOpen(false), 150)}
+-                onKeyDown={(e) => {
+-                  if (e.key === 'Enter') {
+-                    e.preventDefault();
+-                    if (suggestions.length > 0 && !authorInput.includes(',')) addAuthorNames(suggestions[0].name);
+-                    else addAuthorNames(authorInput);
+-                  } else if (e.key === 'Escape') {
+-                    setAuthorOpen(false);
+-                  }
+-                }}
+-                placeholder="Nome do autor..."
+-              />
+-              {authorOpen && suggestions.length > 0 && (
+-                <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-control bg-surface shadow-card hairline">
+-                  {suggestions.map((a) => (
+-                    <button
+-                      key={a.id}
+-                      type="button"
+-                      onMouseDown={(e) => {
+-                        e.preventDefault();
+-                        addAuthorNames(a.name);
+-                      }}
+-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[13.5px] font-semibold text-ink transition-colors duration-150 hover:bg-surfaceWarm"
+-                    >
+-                      <Check className="size-3.5 text-primary" />
+-                      {a.name}
+-                    </button>
+-                  ))}
+-                </div>
+-              )}
+-            </div>
+-            {authorsField.length > 0 && (
+-              <div className="mt-3 flex flex-wrap gap-2">
+-                {authorsField.map((a, i) => (
+-                  <span
+-                    key={`${a.name}-${i}`}
+-                    className={`inline-flex items-center gap-1.5 rounded-full py-1.5 pl-3.5 pr-1.5 text-[13px] font-semibold transition-all duration-200 [transition-timing-function:var(--ease)] ${
+-                      a.id == null
+-                        ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-300'
+-                        : 'bg-primary text-white shadow-card'
+-                    }`}
+-                  >
+-                    {a.name}
+-                    {a.id == null && (
+-                      <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+-                        novo
+-                      </span>
+-                    )}
+-                    <button
+-                      type="button"
+-                      onClick={() => removeAuthor(i)}
+-                      aria-label={`Remover autor ${a.name}`}
+-                      className={`rounded-full p-1 transition-colors duration-150 ${
+-                        a.id == null ? 'hover:bg-amber-100' : 'hover:bg-primary-dark'
+-                      }`}
+-                    >
+-                      <X className="size-3" />
+-                    </button>
+-                  </span>
+-                ))}
+-              </div>
+-            )}
+-            {errors.authors && <FieldError message={errors.authors.message ?? 'Informe ao menos um autor'} />}
++          <CardContent className="grid gap-4 sm:grid-cols-2">
++            <SectionTitle>V├¡nculos</SectionTitle>
++            <TagInputField
++              label="Autores *"
++              helpText="Digite os autores separados por v├¡rgulas. Nomes ainda n├úo cadastrados s├úo criados ao salvar."
++              placeholder="Nome do autor..."
++              options={authors}
++              value={authorsField}
++              onChange={(next) => setValue('authors', next)}
++              error={errors.authors?.message ?? undefined}
++            />
++            <TagInputField
++              label="Categorias"
++              helpText="Digite as categorias separadas por v├¡rgulas. Categorias ainda n├úo cadastradas s├úo criadas ao salvar."
++              placeholder="Nome da categoria..."
++              options={categories}
++              value={categoriesField}
++              onChange={(next) => setValue('categories', next)}
++            />
+           </CardContent>
+         </Card>
+ 
+         <div className="flex justify-end gap-2">
+           <Button type="button" variant="secondary" onClick={() => navigate('/admin/livros')}>
+             Cancelar
+           </Button>
+           <Button type="submit" loading={submitting}>
+             <Save className="size-4" /> {isEdit ? 'Salvar altera├º├Áes' : 'Cadastrar livro'}
+           </Button>
+diff --git a/frontend/src/pages/admin/books.tsx b/frontend/src/pages/admin/books.tsx
+index fec460e..222aef7 100644
+--- a/frontend/src/pages/admin/books.tsx
++++ b/frontend/src/pages/admin/books.tsx
+@@ -11,20 +11,26 @@ import { PageHeader } from '../../components/ui/page-header';
+ import { Pagination } from '../../components/ui/pagination';
+ import { Skeleton } from '../../components/ui/skeleton';
+ import { NativeSelect } from '../../components/ui/select';
+ import { TD, TH, TBody, THead, TR, Table } from '../../components/ui/table';
+ import { booksApi, categoriesApi } from '../../features/api';
+ import { useDebounce } from '../../features/hooks/use-debounce';
+ import { useToast } from '../../features/toast/toast-provider';
+ import { apiErrorMessage } from '../../lib/errors';
+ import type { Book, Category, Paginated } from '../../types/api';
+ 
++const FORMAT_LABELS: Record<string, string> = {
++  CAPA: 'Capa',
++  BROCHURA: 'Brochura',
++  ESPIRAL: 'Espiral',
++};
++
+ export function BooksPage() {
+   const [params, setParams] = useSearchParams();
+   const q = params.get('q') ?? '';
+   const category = params.get('category') ?? '';
+   const availability = params.get('availability') ?? '';
+   const status = params.get('status') ?? 'all';
+   const page = Number(params.get('page') ?? '1');
+ 
+   const [input, setInput] = useState(q);
+   const debounced = useDebounce(input, 350);
+@@ -135,20 +141,21 @@ export function BooksPage() {
+       ) : (
+         data && (
+           <>
+             <Card className="overflow-hidden p-0">
+               <Table>
+                 <THead>
+                   <TR>
+                     <TH>Capa</TH>
+                     <TH>T├¡tulo</TH>
+                     <TH>Categoria</TH>
++                    <TH>Formato</TH>
+                     <TH className="text-center">Disponibilidade</TH>
+                     <TH>Status</TH>
+                     <TH className="text-right">A├º├Áes</TH>
+                   </TR>
+                 </THead>
+                 <TBody>
+                   {data.items.map((b) => (
+                     <TR key={b.id}>
+                       <TD>
+                         <BookCover
+@@ -169,20 +176,27 @@ export function BooksPage() {
+                         {b.categories.length > 0 ? (
+                           <div className="flex flex-wrap gap-1">
+                             {b.categories.map((c) => (
+                               <Badge key={c.id} variant="primary">{c.name}</Badge>
+                             ))}
+                           </div>
+                         ) : (
+                           <span className="text-muted">ÔÇö</span>
+                         )}
+                       </TD>
++                      <TD>
++                        {b.format ? (
++                          <Badge variant="neutral">{FORMAT_LABELS[b.format] ?? b.format}</Badge>
++                        ) : (
++                          <span className="text-muted">ÔÇö</span>
++                        )}
++                      </TD>
+                       <TD className="text-center">
+                         {b.isAvailable ? (
+                           <Badge variant="success" dot>
+                             Dispon├¡vel
+                           </Badge>
+                         ) : (
+                           <Badge variant="warning" dot>
+                             Indispon├¡vel
+                           </Badge>
+                         )}
+diff --git a/frontend/src/types/api.ts b/frontend/src/types/api.ts
+index 213916d..d34d8c3 100644
+--- a/frontend/src/types/api.ts
++++ b/frontend/src/types/api.ts
+@@ -42,36 +42,68 @@ export interface Author {
+ }
+ 
+ export interface Category {
+   id: number;
+   name: string;
+   description: string | null;
+   status: Status;
+   _count?: { books: number };
+ }
+ 
++export type BookFormat = 'CAPA' | 'BROCHURA' | 'ESPIRAL';
++
++export type AcquisitionType =
++  | 'COMPRA'
++  | 'DOACAO'
++  | 'REPOSICAO'
++  | 'PRODUCAO_INTERNA'
++  | 'TROCA'
++  | 'EMPRESTIMO_BIBLIOTECAS'
++  | 'LICITACAO'
++  | 'PERMUTA'
++  | 'CONVENIO';
++
++export interface Subject {
++  id: number;
++  name: string;
++}
++
++export interface KnowledgeArea {
++  id: number;
++  name: string;
++}
++
+ export interface Book {
+   id: number;
+   isbn10: string | null;
+   isbn13: string | null;
+   title: string;
+   subtitle: string | null;
+   description: string | null;
+   publisher: string | null;
+   edition: number | null;
+   publicationYear: number | null;
+   language: string | null;
+   pages: number | null;
+   coverUrl: string | null;
++  format: BookFormat | null;
++  volume: string | null;
++  cdd: string | null;
++  cutter: string | null;
++  physicalLocation: string | null;
++  availableCopies: number | null;
++  acquisitionType: AcquisitionType | null;
+   isArchived: boolean;
+   categories: Category[];
+   authors: { author: Author }[];
++  subjects: Subject[];
++  knowledgeAreas: KnowledgeArea[];
+   isAvailable: boolean;
+   hasActiveLoan?: boolean;
+   createdAt: string;
+   loans?: Loan[];
+ }
+ 
+ export interface Reader {
+   id: number;
+   name: string;
+   cpf: string;
+@@ -206,13 +238,22 @@ export interface BookFormValues {
+   subtitle: string;
+   isbn10: string;
+   isbn13: string;
+   description: string;
+   publisher: string;
+   edition: string;
+   publicationYear: string;
+   language: string;
+   pages: string;
+   coverUrl: string;
++  format: string;
++  volume: string;
++  cdd: string;
++  cutter: string;
++  physicalLocation: string;
++  availableCopies: string;
++  acquisitionType: string;
+   categories: { id: number | null; name: string }[];
+   authors: { id: number | null; name: string }[];
++  subjects: { id: number | null; name: string }[];
++  knowledgeAreas: { id: number | null; name: string }[];
+ }

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": {
+    "paths": [".agents/skills"]
+  },
+  "plugin": [
+    "~/.config/opencode/node_modules/superpowers"
+  ],
+  "mcp": {
+    "sentry": {
+      "type": "remote",
+      "url": "https://mcp.sentry.dev/mcp",
+      "oauth": {}
+    },
+    "appwrite": {
+      "type": "remote",
+      "enabled": true,
+      "url": "https://mcp.appwrite.io"
+    }
+  }
+}

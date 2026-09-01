@@ -1,0 +1,36 @@
+﻿diff --git a/backend/src/modules/reader.routes.ts b/backend/src/modules/reader.routes.ts
+index a69c31b..19c1b45 100644
+--- a/backend/src/modules/reader.routes.ts
++++ b/backend/src/modules/reader.routes.ts
+@@ -200,11 +200,27 @@ readerRouter.patch(
+   '/:id/status',
+   asyncHandler(async (req, res) => {
+     const id = Number(req.params.id);
+-    const { status } = parse(readerStatusSchema, req.body);
++    const { status, reason, category } = parse(readerStatusSchema, req.body);
+     const existing = await prisma.reader.findUnique({ where: { id } });
+     if (!existing) throw new HttpError(404, 'Leitor n├úo encontrado');
+-    const reader = await prisma.reader.update({ where: { id }, data: { status } });
+-    await writeAudit(req.user?.id, 'READER_STATUS_CHANGED', 'Reader', id, { status }, req.ip);
++    const data: Record<string, unknown> = { status };
++    if (status === 'BLOCKED') {
++      data.blockReason = reason ?? null;
++      data.blockCategory = category ?? null;
++      data.blockedAt = new Date();
++      data.blockedBy = req.user!.id;
++    } else if (status === 'ACTIVE') {
++      data.blockReason = null;
++      data.blockCategory = null;
++      data.blockedAt = null;
++      data.blockedBy = null;
++    }
++    const reader = await prisma.reader.update({ where: { id }, data });
++    await writeAudit(req.user?.id, 'READER_STATUS_CHANGED', 'Reader', id, {
++      status,
++      reason: reason ?? null,
++      category: category ?? null,
++    }, req.ip);
+     res.json(reader);
+   }),
+ );
+\ No newline at end of file
