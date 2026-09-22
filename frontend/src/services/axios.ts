@@ -1,9 +1,4 @@
-import axios, { AxiosError, type AxiosAdapter, type AxiosResponse } from 'axios';
-
-const FUNCTION_ENDPOINT: string | null =
-  import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')
-    ? import.meta.env.VITE_API_URL
-    : null;
+import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 
 interface FunctionEnvelope {
   status: number;
@@ -12,29 +7,16 @@ interface FunctionEnvelope {
   isBase64Encoded: boolean;
 }
 
-interface AppwriteExecutionPayload {
-  statusCode: number;
-  body: unknown;
-  headers?: Record<string, string>;
-}
-
-function normalizeEnvelope(raw: unknown): FunctionEnvelope {
-  if (raw && typeof raw === 'object' && 'status' in raw) {
-    const e = raw as FunctionEnvelope;
-    return {
-      status: e.status,
-      headers: e.headers ?? {},
-      body: String(e.body ?? ''),
-      isBase64Encoded: Boolean(e.isBase64Encoded),
-    };
-  }
-  const exec = raw as AppwriteExecutionPayload;
-  return {
-    status: exec.statusCode,
-    headers: exec.headers ?? {},
-    body: typeof exec.body === 'string' ? exec.body : JSON.stringify(exec.body ?? ''),
-    isBase64Encoded: false,
-  };
+function isEnvelope(raw: unknown): raw is FunctionEnvelope {
+  if (!raw || typeof raw !== 'object') return false;
+  const e = raw as Record<string, unknown>;
+  return (
+    typeof e.status === 'number' &&
+    typeof e.headers === 'object' &&
+    e.headers !== null &&
+    typeof e.body === 'string' &&
+    typeof e.isBase64Encoded === 'boolean'
+  );
 }
 
 function base64ToBlob(b64: string, type: string): Blob {
@@ -44,95 +26,47 @@ function base64ToBlob(b64: string, type: string): Blob {
   return new Blob([bytes as unknown as BlobPart], { type });
 }
 
-function envelopeToData(envelope: FunctionEnvelope, responseType?: string): unknown {
-  if (responseType === 'blob') {
-    if (envelope.isBase64Encoded) {
-      const type = envelope.headers['content-type'] || 'application/octet-stream';
-      return base64ToBlob(envelope.body, type);
-    }
-    return new Blob([envelope.body]);
-  }
-  if (!envelope.body) return '';
-  try {
-    return JSON.parse(envelope.body);
-  } catch {
-    return envelope.body;
-  }
-}
-
-function appendTypeParam(url: string): string {
-  return url.includes('?') ? `${url}&type=json` : `${url}?type=json`;
-}
-
-/**
- * Adapter que conversa com o backend Express exposto como Appwrite Function.
- * Todos os responses viajam num envelope JSON `{status,headers,body,isBase64Encoded}`.
- * Só é ativado quando VITE_API_URL aponta para o domínio da Function; no dev
- * (proxy Vite /api) o axios padrão é usado.
- */
-const appwriteAdapter: AxiosAdapter = async (config) => {
-  const fullUrl = axios.getUri(config);
-  const url = appendTypeParam(fullUrl);
-
-  const headers: Record<string, string> = {};
-  const cfgHeaders = config.headers as Record<string, unknown> | undefined;
-  if (cfgHeaders) {
-    for (const [k, v] of Object.entries(cfgHeaders)) {
-      if (typeof v === 'string') headers[k.toLowerCase()] = v;
-    }
-  }
-
-  const method = (config.method ?? 'get').toUpperCase();
-  const hasBody = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-  const bodyData = hasBody ? (config.data as string | undefined) : undefined;
-
-  const fetchOptions: RequestInit = {
-    method,
-    headers,
-    signal: config.signal as AbortSignal | null | undefined,
-    body: bodyData,
-  };
-
-  const res = await fetch(url, fetchOptions);
-  const raw = (await res.json()) as unknown;
-  const envelope = normalizeEnvelope(raw);
-
-  const data = envelopeToData(envelope, config.responseType);
-
-  if (envelope.status >= 400) {
-    const error = new AxiosError(
-      typeof data === 'string' ? data : JSON.stringify(data),
-      undefined,
-      config,
-      null,
-      {
-        data,
-        status: envelope.status,
-        statusText: String(envelope.status),
-        headers: envelope.headers,
-        config,
-      } as AxiosResponse,
-    );
-    throw error;
-  }
-
-  return {
-    data,
-    status: envelope.status,
-    statusText: String(envelope.status),
-    headers: envelope.headers,
-    config,
-    request: res,
-  };
-};
-
 export const api = axios.create({
-  baseURL: FUNCTION_ENDPOINT || '/api',
+  baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
-if (FUNCTION_ENDPOINT) {
-  api.defaults.adapter = appwriteAdapter;
+/**
+ * Decodifica envelope `{status,headers,body,isBase64Encoded}` produzido pelo
+ * bridge da Appwrite Function. Ativo em runtime (produção via rewrite `/api`
+ * do Vercel para o domínio da Function). No dev (proxy Vite para localhost)
+ * o backend responde body puro — passa direto.
+ */
+function envelopeData(raw: unknown, responseType?: string): { data: unknown; headers: Record<string, string>; status: number } {
+  if (!isEnvelope(raw)) return { data: raw, headers: {}, status: 200 };
+  if (responseType === 'blob') {
+    const type = raw.headers['content-type'] || 'application/octet-stream';
+    if (raw.isBase64Encoded) return { data: base64ToBlob(raw.body, type), headers: raw.headers, status: raw.status };
+    return { data: new Blob([raw.body], { type }), headers: raw.headers, status: raw.status };
+  }
+  if (!raw.body) return { data: '', headers: raw.headers, status: raw.status };
+  try {
+    return { data: JSON.parse(raw.body), headers: raw.headers, status: raw.status };
+  } catch {
+    return { data: raw.body, headers: raw.headers, status: raw.status };
+  }
+}
+
+function envelopeError(raw: unknown, config: InternalAxiosRequestConfig): AxiosError {
+  const { data, status } = envelopeData(raw, (config as AxiosRequestConfig).responseType);
+  return new AxiosError(
+    typeof data === 'string' ? data : JSON.stringify(data),
+    undefined,
+    config,
+    null,
+    {
+      data,
+      status,
+      statusText: String(status),
+      headers: isEnvelope(raw) ? raw.headers : {},
+      config,
+    } as AxiosResponse,
+  );
 }
 
 const TOKEN_KEY = 'livraria_token';
@@ -153,7 +87,14 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const decoded = envelopeData(response.data, response.config.responseType);
+    if (decoded.status >= 400) {
+      throw envelopeError(response.data, response.config);
+    }
+    response.data = decoded.data;
+    return response;
+  },
   (error) => {
     if (error?.response?.status === 401 && !error?.config?.url?.includes('/auth/login')) {
       setToken(null);
