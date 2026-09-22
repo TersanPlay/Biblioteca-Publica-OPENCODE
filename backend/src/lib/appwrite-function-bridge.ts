@@ -36,6 +36,7 @@ interface AppwriteReq {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface AppwriteRes {
   json: (obj: unknown, status?: number, headers?: Record<string, string>) => unknown;
+  text: (text: string, status?: number, headers?: Record<string, string>) => unknown;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,10 +136,16 @@ function pickCorsHeaders(headers: Record<string, string>): Record<string, string
 }
 
 /**
- * Devolve o envelope como body. Repassa os headers CORS reais do Express
- * (Access-Control-*) para o response HTTP da Function, pois o navegador
- * exige `Access-Control-Allow-Origin` no response que recebe — sem isso,
- * um frontend cross-origin (Vercel) é bloqueado ao ler o envelope.
+ * Devolve o envelope como body JSON e repassa os headers de resposta do Express.
+ * O runtime da Appwrite Function só aplica headers reais ao response HTTP
+ * quando passados como 3º argumento de `res.text` — `res.json` não os repassa.
+ * Sem `Access-Control-Allow-Origin` no response, o navegador bloqueia a leitura
+ * do envelope por um frontend cross-origin (ex.: Vercel).
  */
-export const buildEnvelopeResponse = (context: AppwriteContext, envelope: FunctionEnvelope) =>
-  context.res.json(envelope, 200, pickCorsHeaders(envelope.headers));
+export const buildEnvelopeResponse = (context: AppwriteContext, envelope: FunctionEnvelope) => {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    ...pickCorsHeaders(envelope.headers),
+  };
+  return context.res.text(JSON.stringify(envelope), 200, headers);
+};
