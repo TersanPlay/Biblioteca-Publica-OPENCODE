@@ -116,5 +116,29 @@ export async function handle(
   return { status, headers, body, isBase64Encoded };
 }
 
+const CORS_HEADERS = new Set([
+  'access-control-allow-origin',
+  'access-control-allow-methods',
+  'access-control-allow-headers',
+  'access-control-allow-credentials',
+  'access-control-expose-headers',
+  'access-control-max-age',
+  'vary',
+]);
+
+function pickCorsHeaders(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (CORS_HEADERS.has(key.toLowerCase())) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Devolve o envelope como body. Repassa os headers CORS reais do Express
+ * (Access-Control-*) para o response HTTP da Function, pois o navegador
+ * exige `Access-Control-Allow-Origin` no response que recebe — sem isso,
+ * um frontend cross-origin (Vercel) é bloqueado ao ler o envelope.
+ */
 export const buildEnvelopeResponse = (context: AppwriteContext, envelope: FunctionEnvelope) =>
-  context.res.json(envelope, 200);
+  context.res.json(envelope, 200, pickCorsHeaders(envelope.headers));
