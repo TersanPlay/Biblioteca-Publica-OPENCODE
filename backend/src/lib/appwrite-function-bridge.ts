@@ -36,14 +36,10 @@ interface AppwriteReq {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface AppwriteRes {
   json: (obj: unknown, status?: number, headers?: Record<string, string>) => unknown;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  log: (...args: any[]) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (...args: any[]) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AppwriteContext = { req: AppwriteReq; res: AppwriteRes } & Record<string, any>;
+type AppwriteContext = { req: AppwriteReq; res: AppwriteRes; log?: (...a: any[]) => void } & Record<string, any>;
 
 function normalizeHeaders(headers: Record<string, string> | undefined): Record<string, string> {
   const out: Record<string, string> = {};
@@ -97,7 +93,7 @@ export async function handle(
 ): Promise<FunctionEnvelope> {
   const event = toFunctionEvent(context.req);
 
-  context.res.log(
+  context.log?.(
     `[function] ${event.httpMethod} ${event.path} (trigger=${context.trigger ?? 'http'})`,
   );
 
@@ -108,7 +104,7 @@ export async function handle(
   const body = typeof result?.body === 'string' ? result.body : String(result?.body ?? '');
   const isBase64Encoded = Boolean(result?.isBase64Encoded);
 
-  context.res.log(`[function] ${event.httpMethod} ${event.path} -> ${status}`);
+  context.log?.(`[function] ${event.httpMethod} ${event.path} -> ${status}`);
 
   return { status, headers, body, isBase64Encoded };
 }
