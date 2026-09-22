@@ -50,6 +50,13 @@ function normalizeHeaders(headers: Record<string, string> | undefined): Record<s
   return out;
 }
 
+function normalizeApiPath(rawPath: string): string {
+  let path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+  while (path.startsWith('/api/api')) path = path.slice(4);
+  if (!path.startsWith('/api')) path = `/api${path}`;
+  return path;
+}
+
 function toFunctionEvent(req: AppwriteReq): FunctionEvent {
   const headers = normalizeHeaders(req.headers);
   const bodyBinary = req.bodyBinary ?? Buffer.alloc(0);
@@ -64,7 +71,7 @@ function toFunctionEvent(req: AppwriteReq): FunctionEvent {
 
   return {
     httpMethod: (req.method ?? 'GET').toUpperCase(),
-    path: req.path ?? '/',
+    path: normalizeApiPath(req.path ?? '/'),
     headers,
     queryStringParameters: req.query ?? {},
     body,
