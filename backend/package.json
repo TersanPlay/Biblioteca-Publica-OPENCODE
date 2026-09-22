@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "appwrite:setup": "tsx scripts/setup-appwrite.ts",
     "appwrite:seed": "tsx scripts/seed-appwrite.ts",
     "appwrite:ping": "tsx scripts/appwrite-ping.ts",
@@ -23,6 +23,7 @@
     "node-appwrite": "^28.0.0",
     "node-cron": "^4.6.0",
     "pdfkit": "^0.20.1",
+    "serverless-http": "^4.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

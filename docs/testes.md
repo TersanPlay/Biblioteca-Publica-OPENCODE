@@ -33,6 +33,15 @@ Cobre **63 casos**, incluindo:
 
 As fixtures são criadas com nomes/emails marcados como `TEST` e removidas no `finally` de cada caso — ao final, o banco volta ao estado anterior.
 
+## Teste do adaptador de Function (`serverless-http`)
+
+O mapeamento `context.req/res` da Appwrite Function → evento HTTP do Express pode ser validado
+localmente sem deploy: montar `createApp()` + `serverless(app)`, chamar `handle(context, handler)`
+com um contexto simulado (igual ao que o open-runtimes produz) e conferir o envelope
+`{ status, headers, body, isBase64Encoded }`. O bridge converte `bodyBinary`/`bodyText` para o evento
+AWS v1 (`httpMethod`, `path`, `queryStringParameters`, `headers`, `body` base64, `isBase64Encoded`)
+e devolve a resposta do Express embrulhada em JSON seguro (nada de bytes brutos atravessa o Appwrite).
+
 ## Typecheck
 
 ```bash

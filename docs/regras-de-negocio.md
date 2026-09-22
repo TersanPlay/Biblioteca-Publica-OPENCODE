@@ -132,11 +132,11 @@ Ações registradas: `LOGIN`, `LOGOUT`, `LOGIN_FAILED`, `USER_CREATED`, `USER_UP
 
 ## Backup
 
-- Backups automáticos: dois horários diários via `node-cron` (18:30 e 23:45).
+- Backups automáticos: dois horários diários — via `node-cron` (dev) ou trigger `schedule` da **Appwrite Function** (produção).
 - Mecanismo: exporta todas as coleções Appwrite para um arquivo JSON (`{ exportedAt, source: 'appwrite', collections }`).
-- Armazenamento: `backend/backups/` com arquivos `backup_YYYY-MM-DD_HH-mm.json`.
+- Armazenamento: **Appwrite Storage** (bucket `biblioteca-backups`) com arquivos `backup_YYYY-MM-DD_HH-mm.json`.
 - Rotação: mantém apenas os 5 backups mais recentes; os antigos são deletados automaticamente.
-- **Download**: `GET /api/backups/:filename/download` — stream do arquivo real.
+- **Download**: `GET /api/backups/:filename/download` — baixa do Storage e envia como attachment.
 - **Restauração manual indisponível**: `POST /api/backups/:filename/restore` retorna `400` — o Appwrite é a fonte de dados; não há upload de restauração.
 - **Exclusão**: `DELETE /api/backups/:filename` — remove o arquivo.
 - Todas as rotas protegidas: `requireAuth` + `requireRoles('ADMIN')`.

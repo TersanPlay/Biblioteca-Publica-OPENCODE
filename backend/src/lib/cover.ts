@@ -159,7 +159,7 @@ function bestCover(html: string): string | null {
 
 async function fetchAmazon(url: string, asin: string): Promise<ResolvedBookInfo | null> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);
+  const timer = setTimeout(() => ctrl.abort(), 10000);
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': UA, 'Accept-Language': 'pt-BR,pt;q=0.9' },
@@ -233,7 +233,7 @@ export async function resolvePublicSubjects(
     (async () => {
       const json = await fetchJson(
         `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&format=json&jscmd=data`,
-        6000,
+        5000,
       );
       if (!json || typeof json !== 'object') return [];
       const entry = Object.values(json as Record<string, unknown>)[0] as

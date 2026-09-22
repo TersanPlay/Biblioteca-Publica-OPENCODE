@@ -6,6 +6,7 @@ import { writeAudit } from '../lib/audit';
 import { listDocs, getDoc, createDoc, updateDoc, COLLECTIONS, type Doc } from '../lib/store';
 import { computeDueDate, expireReservations, refreshOverdue } from '../lib/overdue';
 import { getSettings } from '../lib/settings';
+import { ID } from '../lib/appwrite';
 import { generateLoanTermPDF, generateReturnTermPDF } from '../lib/terms';
 import { dateOrNull, loanQuerySchema, loanReturnSchema, parse } from '../validation';
 
@@ -13,13 +14,11 @@ export const loanRouter = Router();
 
 const ACTIVE_STATUSES = ['ACTIVE', 'OVERDUE'];
 
-let loanNumberCounter = 0;
 async function nextLoanNumber(): Promise<string> {
-  const res = await listDocs(COLLECTIONS.loans, { pageSize: 1000 });
-  const base = res.total + 1 + loanNumberCounter++;
   const d = new Date();
   const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  return `EMP-${ymd}-${String(base).padStart(4, '0')}`;
+  const suffix = ID.unique().slice(-5).toUpperCase();
+  return `EMP-${ymd}-${suffix}`;
 }
 
 async function listAllLoans(): Promise<Doc[]> {

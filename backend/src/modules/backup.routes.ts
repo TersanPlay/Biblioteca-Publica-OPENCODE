@@ -1,24 +1,23 @@
 import { Router } from 'express';
-import fs from 'node:fs';
-import path from 'node:path';
 import cron from 'node-cron';
 import { asyncHandler } from '../middleware/async-handler';
 import { requireAuth, requireRoles } from '../middleware/auth';
 import { HttpError } from '../lib/http-error';
 import { writeAudit } from '../lib/audit';
 import { listDocs, COLLECTIONS } from '../lib/store';
+import {
+  ID,
+  Query,
+  storage,
+  APPWRITE_BACKUP_BUCKET_ID,
+  isFunctionRuntime,
+} from '../lib/appwrite';
+import { InputFile } from 'node-appwrite/file';
 
 export const backupRouter = Router();
 
-const BACKUP_DIR = path.resolve(__dirname, '../../backups');
 const MAX_BACKUPS = 5;
 const COLLECTION_IDS = Object.values(COLLECTIONS);
-
-function ensureBackupDir() {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true });
-  }
-}
 
 function timestamp(): string {
   const now = new Date();
@@ -26,10 +25,16 @@ function timestamp(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
 }
 
+function ensureBucketId(): string {
+  if (!APPWRITE_BACKUP_BUCKET_ID) {
+    throw new HttpError(500, 'Bucket de backup não configurado (APPWRITE_BACKUP_BUCKET_ID)');
+  }
+  return APPWRITE_BACKUP_BUCKET_ID;
+}
+
 export async function createBackup(): Promise<{ filename: string; size: number }> {
-  ensureBackupDir();
+  const bucketId = ensureBucketId();
   const filename = `backup_${timestamp()}.json`;
-  const dest = path.join(BACKUP_DIR, filename);
 
   const collections: Record<string, unknown[]> = {};
   for (const collection of COLLECTION_IDS) {
@@ -43,40 +48,49 @@ export async function createBackup(): Promise<{ filename: string; size: number }
     collections,
   };
 
-  fs.writeFileSync(dest, JSON.stringify(payload, null, 2), 'utf-8');
+  const file = InputFile.fromBuffer(
+    Buffer.from(JSON.stringify(payload, null, 2), 'utf-8'),
+    filename,
+  );
+  const created = await storage.createFile({
+    bucketId,
+    fileId: filename,
+    file,
+    permissions: [], // acesso apenas via API key/server
+  });
 
-  const stats = fs.statSync(dest);
-  rotateBackups();
-  await writeAudit(null, 'BACKUP_CREATED', 'Backup', filename, { size: stats.size });
-  return { filename, size: stats.size };
+  await rotateBackups();
+  await writeAudit(null, 'BACKUP_CREATED', 'Backup', filename, { size: created.sizeOriginal });
+  return { filename, size: created.sizeOriginal };
 }
 
-function rotateBackups() {
-  ensureBackupDir();
-  const files = fs.readdirSync(BACKUP_DIR)
-    .filter((f) => f.startsWith('backup_') && f.endsWith('.json'))
-    .sort()
-    .reverse();
+async function rotateBackups(): Promise<void> {
+  const bucketId = ensureBucketId();
+  const { files } = await storage.listFiles({
+    bucketId,
+    queries: [Query.orderDesc('$createdAt')],
+  });
 
-  for (const file of files.slice(MAX_BACKUPS)) {
-    fs.unlinkSync(path.join(BACKUP_DIR, file));
+  const backups = files.filter((f) => f.name.startsWith('backup_') && f.name.endsWith('.json'));
+  for (const file of backups.slice(MAX_BACKUPS)) {
+    await storage.deleteFile({ bucketId, fileId: file.$id });
   }
 }
 
-function listBackups(): { filename: string; size: number; createdAt: string }[] {
-  ensureBackupDir();
-  return fs.readdirSync(BACKUP_DIR)
-    .filter((f) => f.startsWith('backup_') && f.endsWith('.json'))
-    .sort()
-    .reverse()
-    .map((filename) => {
-      const stats = fs.statSync(path.join(BACKUP_DIR, filename));
-      return {
-        filename,
-        size: stats.size,
-        createdAt: stats.mtime.toISOString(),
-      };
-    });
+async function listBackups(): Promise<{ filename: string; size: number; createdAt: string }[]> {
+  const bucketId = ensureBucketId();
+  const { files } = await storage.listFiles({
+    bucketId,
+    queries: [Query.orderDesc('$createdAt')],
+  });
+
+  return files
+    .filter((f) => f.name.startsWith('backup_') && f.name.endsWith('.json'))
+    .map((f) => ({
+      filename: f.name,
+      size: f.sizeOriginal,
+      createdAt: f.$createdAt,
+    }));
 }
 
 backupRouter.get(
@@ -84,7 +98,7 @@ backupRouter.get(
   requireAuth,
   requireRoles('ADMIN'),
   asyncHandler(async (_req, res) => {
-    res.json(listBackups());
+    res.json(await listBackups());
   }),
 );
 
@@ -94,7 +108,9 @@ backupRouter.post(
   requireRoles('ADMIN'),
   asyncHandler(async (req, res) => {
     const result = await createBackup();
-    await writeAudit(req.user?.id, 'BACKUP_CREATED', 'Backup', result.filename, { size: result.size });
+    await writeAudit(req.user?.id, 'BACKUP_CREATED', 'Backup', result.filename, {
+      size: result.size,
+    });
     res.status(201).json(result);
   }),
 );
@@ -110,11 +126,21 @@ backupRouter.get(
     if (!SAFE_FILENAME.test(filename)) {
       throw new HttpError(400, 'Nome de arquivo inválido');
     }
-    const filePath = path.join(BACKUP_DIR, filename);
-    if (!fs.existsSync(filePath)) {
+    const bucketId = ensureBucketId();
+
+    let blob: ArrayBuffer;
+    try {
+      blob = await storage.getFileDownload({ bucketId, fileId: filename });
+    } catch {
       throw new HttpError(404, 'Backup não encontrado');
     }
-    res.download(filePath, filename);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    res.send(Buffer.from(blob));
   }),
 );
 
@@ -136,13 +162,14 @@ backupRouter.delete(
     if (!SAFE_FILENAME.test(filename)) {
       throw new HttpError(400, 'Nome de arquivo inválido');
     }
+    const bucketId = ensureBucketId();
 
-    const filePath = path.join(BACKUP_DIR, filename);
-    if (!fs.existsSync(filePath)) {
+    try {
+      await storage.deleteFile({ bucketId, fileId: filename });
+    } catch {
       throw new HttpError(404, 'Backup não encontrado');
     }
 
-    fs.unlinkSync(filePath);
     await writeAudit(req.user?.id, 'BACKUP_DELETED', 'Backup', filename, undefined, req.ip);
     res.json({ ok: true });
   }),
@@ -170,4 +197,9 @@ export function startBackupCrons() {
   });
 
   console.log('[cron] Backups agendados: 18:30 e 23:45');
+}
+
+/** No runtime Function quem agenda é o trigger `schedule`, não o cron local. */
+export function shouldScheduleBackups(): boolean {
+  return !isFunctionRuntime();
 }

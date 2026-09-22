@@ -4,16 +4,18 @@ Sistema web para gestão de biblioteca pública: acervo, leitores, exemplares, e
 
 ## Stack
 
-- **Backend**: Node.js + Express + TypeScript + Appwrite (Databases + Auth via `node-appwrite`) + JWT + pdfkit (geração de termos PDF) + node-cron (backups automáticos)
+- **Backend**: Node.js + Express + TypeScript + Appwrite (Databases + Auth + Storage via `node-appwrite`) + JWT + pdfkit (termos PDF). Dois modos: servidor local (porta 3333, cron de backups via node-cron) e **Appwrite Function** (produção, via `serverless-http`)
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + Radix UI + Lucide React + React Router + Axios + React Hook Form + Zod
 - **UI/UX**: metodologia UI Architect ASJ (canvas `#F2F2F0`, primary `#087F8C`, superfícies creme, hairline, motion refinado)
 
 ## Estrutura
 
 ```
-backend/   API REST (porta 3333, URL base /api)
+backend/   API REST (porta 3333 local; Appwrite Function em produção, URL base /api)
 frontend/  SPA (Vite dev na porta 5173, proxy /api → 3333)
 ```
+
+> **Deploy em produção:** o backend roda como **Appwrite Function** (`src/function.ts`, entrypoint `dist/src/function.js`), domínio `https://biblioteca-publica-opencode.appwrite.network`, e o frontend aponta `VITE_API_URL=https://biblioteca-publica-opencode.appwrite.network/api`. Backups vão para o **Appwrite Storage** (bucket `biblioteca-backups`). Passos completos em [docs/arquitetura.md](docs/arquitetura.md#deployment-produção).
 
 ---
 

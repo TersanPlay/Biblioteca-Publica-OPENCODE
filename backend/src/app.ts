@@ -1,5 +1,5 @@
 import cors from 'cors';
-import express from 'express';
+import express, { type Express } from 'express';
 import { authRouter } from './modules/auth.routes';
 import { userRouter } from './modules/user.routes';
 import { bookRouter } from './modules/book.routes';
@@ -16,35 +16,47 @@ import { dashboardRouter } from './modules/dashboard.routes';
 import { backupRouter } from './modules/backup.routes';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
-export const app = express();
+export interface CreateAppOptions {
+  /** Inicializa o parser de JSON do body. Desligue quando o runtime já entrega o body parseado. */
+  jsonBody?: boolean;
+}
 
-app.use(
-  cors({
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
-      .split(',')
-      .map((s) => s.trim()),
-  }),
-);
-app.use(express.json());
+export function createApp(opts: CreateAppOptions = {}): Express {
+  const { jsonBody = true } = opts;
+  const app = express();
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'livraria-api' });
-});
+  app.use(
+    cors({
+      origin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
+        .split(',')
+        .map((s) => s.trim()),
+    }),
+  );
+  if (jsonBody) app.use(express.json());
 
-app.use('/api/auth', authRouter);
-app.use('/api/users', userRouter);
-app.use('/api/books', bookRouter);
-app.use('/api/authors', authorRouter);
-app.use('/api/subjects', subjectRouter);
-app.use('/api/knowledge-areas', knowledgeAreaRouter);
-app.use('/api/readers', readerRouter);
-app.use('/api/loans', loanRouter);
-app.use('/api/reservations', reservationRouter);
-app.use('/api/reports', reportRouter);
-app.use('/api/audit', auditRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/backups', backupRouter);
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true, service: 'livraria-api' });
+  });
 
-app.use(notFoundHandler);
-app.use(errorHandler);
+  app.use('/api/auth', authRouter);
+  app.use('/api/users', userRouter);
+  app.use('/api/books', bookRouter);
+  app.use('/api/authors', authorRouter);
+  app.use('/api/subjects', subjectRouter);
+  app.use('/api/knowledge-areas', knowledgeAreaRouter);
+  app.use('/api/readers', readerRouter);
+  app.use('/api/loans', loanRouter);
+  app.use('/api/reservations', reservationRouter);
+  app.use('/api/reports', reportRouter);
+  app.use('/api/audit', auditRouter);
+  app.use('/api/settings', settingsRouter);
+  app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/backups', backupRouter);
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  return app;
+}
+
+export const app = createApp();

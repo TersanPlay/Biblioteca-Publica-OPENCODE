@@ -5,16 +5,19 @@
 Aplicação web de duas camadas para gestão de biblioteca pública:
 
 ```
-┌──────────────┐   HTTP/JSON (axios)   ┌──────────────┐   node-appwrite   ┌─────────────┐
-│  Frontend    │ ─────────────────────► │  Backend     │ ────────────────► │  Appwrite   │
-│  React + Vite│ ◄───────────────────── │  Express API │ ◄──────────────── │  Databases  │
-└──────────────┘        JWT Bearer      └──────────────┘      + Auth       └─────────────┘
-   http://localhost:5173                   http://localhost:3333/api
+┌──────────────┐  HTTP/JSON  ┌───────────────────────────┐  node-appwrite  ┌─────────────┐
+│   Frontend   │            │  Backend                  │  ─────────────► │   Appwrite  │
+│ React + Vite │ ──────────► │ Express (dev) OU          │                 │  Databases  │
+│        (Vercel)│ ◄────────── │  Appwrite Function (prod) │ ◄────────────── │    Auth     │
+└──────────────┘  JWT Bearer └───────────────────────────┘                 └─────────────┘
+   localhost:5173                localhost:3333/api  (dev)                     + Storage
 ```
 
 - O frontend é uma SPA (Vite dev na porta 5173) com proxy `/api` → porta 3333 em desenvolvimento.
-- O backend expõe uma API REST sob a URL base `/api` (porta 3333).
-- O armazenamento e a autenticação ficam no **Appwrite** (client `node-appwrite`): `Databases` para as coleções do domínio e `Account`/`Users` para credenciais.
+- O backend é o mesmo Express 4 em dois modos de execução:
+  - **Desenvolvimento**: `src/server.ts` escuta na porta 3333 (rota base `/api`). Cron de backups local com `node-cron`.
+  - **Produção**: `src/function.ts` é o entrypoint de uma **Appwrite Function** (Node runtime). O handler `serverless-http` traduz o contexto HTTP da Function para um evento AWS API Gateway v1 e embutir a resposta do Express num envelope JSON. Frontend aponta `VITE_API_URL` para o domínio da Function.
+- O armazenamento e a autenticação ficam no **Appwrite** (client `node-appwrite`): `Databases` para as coleções do domínio, `Account`/`Users` para credenciais e **Storage** para backups.
 - Autenticação da sessão própria: JWT assinado, enviado como `Authorization: Bearer <token>`.
 
 ## Stack
@@ -23,14 +26,15 @@ Aplicação web de duas camadas para gestão de biblioteca pública:
 
 | Camada | Tecnologia |
 |---|---|
-| Runtime | Node.js + TypeScript (executado com `tsx watch`) |
-| HTTP | Express 4 |
+| Runtime | Node.js + TypeScript (executado com `tsx watch`; build CJS via `tsc`) |
+| HTTP | Express 4 (dev) / Appwrite Function (`serverless-http` como adaptador; prod) |
 | Dados + Auth | Appwrite Cloud (`node-appwrite`): Databases + Account/Users |
+| Backup | Appwrite Storage (`node-appwrite` `Storage` + `InputFile.fromBuffer`) |
 | Validação | Zod 3 (`src/validation.ts`) |
 | Autenticação de sessão | JWT (`jsonwebtoken`) |
 | PDF | `pdfkit` (geração de termos de empréstimo e devolução) |
-| Rate limit | `express-rate-limit` (login e consulta de capa) |
-| Cron | `node-cron` (backups automáticos 18:30 e 23:45) |
+| Rate limit | `express-rate-limit` (login e consulta de capa; **desligado em Function** — stateless) |
+| Cron | `node-cron` (dev) / **Appwrite Function schedule trigger** (prod) |
 
 ### Frontend (`frontend/`)
 
@@ -53,15 +57,17 @@ Metodologia UI Architect ASJ: canvas `#F2F2F0`, primary `#087F8C`, superfícies 
 backend/
   scripts/
     appwrite-ping.ts     Ping de conectividade com o Appwrite
-    setup-appwrite.ts    Setup das coleções/atributos (schema de dados)
+    setup-appwrite.ts    Setup das coleções/atributos (schema) + bucket de backups
     seed-appwrite.ts     Seed: cria usuário admin no Appwrite Auth via env
     smoke.ts             Suite E2E via API (63 casos)
   src/
-    server.ts            Bootstrap HTTP
+    server.ts            Bootstrap HTTP local (dev) + cron de backups
+    function.ts          Entrypoint da Appwrite Function (serverless-http + schedule)
     app.ts               Montagem dos routers, CORS, handlers de erro
     validation.ts        Todos os schemas Zod + helpers (CPF, ISBN)
     lib/
-      appwrite.ts        Cliente Appwrite + APPWRITE_* de ambiente
+      appwrite.ts        Cliente Appwrite + APPWRITE_* + storage + isFunctionRuntime()
+      appwrite-function-bridge.ts  Traduz contexto req/res da Function ↔ evento it Gateway/Express
       store.ts           Data-access layer (listDocs/findDocBy/createDoc/... + COLLECTIONS)
       http-error.ts      HttpError (status + message)
       audit.ts           writeAudit()
@@ -76,7 +82,6 @@ backend/
       error-handler.ts   notFoundHandler + errorHandler
       async-handler.ts
     modules/             Um router por domínio (ver docs/modulos.md)
-  backups/               Backups exportados em JSON (coleções Appwrite)
 
 frontend/
   src/
@@ -90,7 +95,7 @@ frontend/
       hooks/             use-async-data (carregamento genérico com loading/error/refetch)
     pages/               Páginas públicas e do admin (ver docs/modulos.md)
     services/
-      axios.ts           Instância axios + interceptor JWT + logout em 401
+      axios.ts           Instância axios + interceptor JWT + adapter Appwrite Function
     types/api.ts         Tipos das entidades da API
 ```
 
@@ -131,13 +136,14 @@ Aplicação no backend: `requireRoles('ADMIN')` em users, subjects (escrita), re
 
 ## Backups
 
-- Backups automáticos: `node-cron` agenda dois horários diários (18:30 e 23:45).
-- Mecanismo: exporta **todas as coleções Appwrite** para um arquivo JSON (`{ exportedAt, source: 'appwrite', collections: {...} }`). Como o Appwrite é a fonte de dados (não há banco local), o backup é um snapshot exportável.
-- Armazenamento: `backend/backups/` com arquivos `backup_YYYY-MM-DD_HH-mm.json`.
-- Rotação: mantém apenas os 5 backups mais recentes; os antigos são deletados automaticamente.
-- Download: `GET /api/backups/:filename/download` — stream do arquivo via `res.download`.
+- Backups automáticos:
+  - **Dev**: `node-cron` agenda dois horários diários (18:30 e 23:45) em `server.ts`.
+  - **Produção (Function)**: trigger de schedule da Appwrite Function chama `createBackup()`. `function-entry` (`src/function.ts`) detecta `context.trigger === 'schedule'` e roda o backup. Cron local não agendado em Function (stateless).
+- Mecanismo: exporta **todas as coleções Appwrite** para um arquivo JSON (`{ exportedAt, source: 'appwrite', collections: {...} }`) e envia ao **Appwrite Storage** (`InputFile.fromBuffer`) no bucket `biblioteca-backups`.
+- Rotação: mantém apenas os 5 backups mais recentes; os antigos são deletados automaticamente (`rotateBackups`).
+- Download: `GET /api/backups/:filename/download` — baixa o arquivo do Storage (`getFileDownload`) e envia como attachment.
 - **Restauração manual indisponível**: o Appwrite é a fonte de dados, então `POST /api/backups/:filename/restore` retorna `400` ("Restauração manual indisponível: o Appwrite é a fonte de dados."). Não há upload de restauração (`multer` foi removido).
-- Exclusão: `DELETE /api/backups/:filename` — remove o arquivo; registra auditoria `BACKUP_DELETED`.
+- Exclusão: `DELETE /api/backups/:filename` — remove o arquivo do Storage; registra auditoria `BACKUP_DELETED`.
 - Endpoints protegidos: `requireAuth` + `requireRoles('ADMIN')` em todas as rotas.
 
 ## Rate limits
@@ -146,6 +152,9 @@ Aplicação no backend: `requireRoles('ADMIN')` em users, subjects (escrita), re
 |---|---|---|---|
 | `POST /api/auth/login` | 15 min | 10 tentativas | In-memory; reset ao reiniciar o servidor |
 | `GET /api/books/cover` | 15 min | 30 consultas | Protege o scrap da Amazon |
+
+- Os limiters vivem em `middleware/login-rate-limit.ts` e `middleware/cover-rate-limit.ts`.
+- **Em Appwrite Function o rate-limit é desligado automaticamente** (`isFunctionRuntime()` — detecta `APPWRITE_FUNCTION_ID` no ambiente): o contador em memória não faz sentido em execução stateless e quebraria o login em produção.
 
 ## CORS
 
@@ -179,7 +188,8 @@ Formato padrão de erro: `{ "error": "<mensagem>" }`.
 APPWRITE_ENDPOINT="https://fra.cloud.appwrite.io/v1"
 APPWRITE_PROJECT_ID=<id-do-projeto>
 APPWRITE_DATABASE_ID=biblioteca
-APPWRITE_API_KEY=<api-key-do-console>
+APPWRITE_API_KEY=<api-key-do-console>  # scopes: databases, users, storage
+APPWRITE_BACKUP_BUCKET_ID=biblioteca-backups  # criado pelo appwrite:setup
 JWT_SECRET=<segredo forte>
 JWT_EXPIRES=8h            # opcional
 ADMIN_EMAIL=voce@dominio.com
@@ -192,8 +202,40 @@ CORS_ORIGIN=http://localhost:5173   # opcional, lista separada por vírgula
 ### Frontend (`frontend/.env`)
 
 ```
-VITE_API_URL=http://localhost:3333/api   # opcional; padrão '/api' (proxy)
+VITE_API_URL=https://biblioteca-publica-opencode.appwrite.network/api   # produção: domínio da Function
+VITE_API_URL=http://localhost:3333/api   # opcional; padrão '/api' (proxy) em dev
 ```
+
+> Quando `VITE_API_URL` é URL completa (`http(s)://`), o axios usa o **adapter de Appwrite Function**
+> (`services/axios.ts`): chama o domínio da Function com `?type=json` e desempacota o envelope
+> `{status, headers, body, isBase64Encoded}`. Binários (PDF/blob) vêm base64 e são reconvertidos.
+
+## Deployment (produção)
+
+### 1. Appwrite Function (backend)
+
+1. Build: `cd backend && npx tsc` gera `dist/` (entrypoint: `dist/src/function.js`, CommonJS).
+2. No Console Appwrite → Functions → Criar:
+   - **Runtime**: Node (nativo), entrypoint `dist/src/function.js`.
+   - **Build command** (quando o Console permite): `npm install && npm run build` (ou subir build pronto em `dist/`).
+   - **Variáveis** (mesmas do `.env`, exceto as de seed):
+     - `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_DATABASE_ID`
+     - `JWT_SECRET` (mesmo valor usado para emitir os JWT), `CORS_ORIGIN` (domínio Vercel)
+     - `APPWRITE_BACKUP_BUCKET_ID`
+   - **Permissões/Scopes**: databases, users, storage.
+   - **Timeout**: compatible com a rota mais lenta (ex.: consulta de capa pode passar de 15s).
+3. Deploy o código (CLI ou subindo `backend/` via Console).
+4. **Schedule trigger** para backups automáticos (ex.: 0 18:30 UTC e 0 23:45 UTC). A Function detecta `context.trigger === 'schedule'` e chama `createBackup()`.
+5. **Key dinâmica**: dentro da Function o runtime injeta `APPWRITE_FUNCTION_API_KEY` (escopos herdados) — não é preciso editar código.
+
+> O domínio público da Function responde em `https://biblioteca-publica-opencode.appwrite.network`.
+> Como o backend espera rotas montadas em `/api`, o frontend aponta `VITE_API_URL=<domínio>/api`.
+
+### 2. Frontend (Vercel)
+
+1. `VITE_API_URL=<domínio-da-function>/api` como env no Vercel.
+2. Deploy padrão SPA (`frontend/vercel.json` já configura rewrite de fallback).
+3. `CORS_ORIGIN` na Function deve incluir o domínio Vercel.
 
 ## Notas
 

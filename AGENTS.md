@@ -38,20 +38,24 @@ dados fictícios, desde que identificados como TEST e removidos ao final (best-e
 
 ## Arquitetura
 
-- **Backend**: Node.js + Express + TypeScript + Appwrite (Databases + Auth via `node-appwrite`)
+- **Backend**: Node.js + Express + TypeScript + Appwrite (Databases + Auth via `node-appwrite`), pontos `*.routes.ts` em `backend/src/modules/`. Executa em dois modos: servidor local (`src/server.ts`, porta 3333) e **Appwrite Function** (`src/function.ts` via `serverless-http`, produto em `dist/src/function.js`).
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + Radix UI + React Router
 - **Portas**: Backend 3333 (API em `/api`), Frontend 5173 (proxy `/api` → 3333)
 - **RBAC**: Duas roles — `ADMIN` e `ATTENDANT`. ADMIN acessa configurações, usuários, relatórios, auditoria, backup. ATTENDANT acessa livros, leitores, empréstimos, devoluções, reservas.
 - **Auditoria**: Toda operação registra o usuário responsável na collection `auditLogs` (Appwrite).
 - **PDFs**: Termos de empréstimo/devolução gerados dinamicamente com snapshots. Sem armazenamento de arquivos.
+- **Backups**: Appwrite Storage (bucket `biblioteca-backups`). Cron local em dev; trigger `schedule` da Function em produção.
+- **Rate-limit**: `express-rate-limit` desligado automaticamente quando `APPWRITE_FUNCTION_ID` presente (`isFunctionRuntime()` em `lib/appwrite.ts`) — stateless.
 
 ## Estrutura Backend
 
 - `backend/src/modules/` — Um arquivo `*.routes.ts` por domínio (auth, book, loan, etc.)
 - `backend/src/lib/store.ts` — Data-access layer sobre as coleções Appwrite (`listDocs`, `findDocBy`, `createDoc`, ... + `COLLECTIONS`)
-- `backend/src/lib/appwrite.ts` — Cliente Appwrite (`node-appwrite`) + `APPWRITE_*` de ambiente
+- `backend/src/lib/appwrite.ts` — Cliente Appwrite (`node-appwrite`) + `APPWRITE_*` de ambiente + `isFunctionRuntime()`
+- `backend/src/lib/appwrite-function-bridge.ts` — Traduz `context.req/res` da Function ↔ evento HTTP Express (envelope `{status,headers,body,isBase64Encoded}`)
+- `backend/src/function.ts` — Entrypoint da Appwrite Function (produção)
 - `backend/src/validation.ts` — Schemas Zod de validação (usados na borda da API)
-- `backend/scripts/setup-appwrite.ts` — Cria banco + coleções + atributos (schema de dados)
+- `backend/scripts/setup-appwrite.ts` — Cria banco + coleções + atributos (schema de dados) + bucket de backups
 - `backend/scripts/seed-appwrite.ts` — Seed estrutural: settings singleton + admin via env
 - `backend/scripts/smoke.ts` — Suite E2E (63 casos)
 
@@ -74,7 +78,7 @@ dados fictícios, desde que identificados como TEST e removidos ao final (best-e
 cd backend
 cp .env.example .env   # Preencher APPWRITE_*, JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 npm install
-npm run appwrite:setup # Cria banco + coleções + atributos
+npm run appwrite:setup # Cria banco + coleções + atributos + bucket de backups
 npm run appwrite:seed  # Seed estrutural (settings + admin via env)
 npm run dev            # Backend em http://localhost:3333/api
 

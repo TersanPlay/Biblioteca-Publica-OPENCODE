@@ -1,6 +1,8 @@
 # Referência da API
 
-URL base: `http://localhost:3333/api` (dev). Autenticação: `Authorization: Bearer <token>`.
+URL base: `http://localhost:3333/api` (dev) ou `https://biblioteca-publica-opencode.appwrite.network/api` (produção — Appwrite Function). Autenticação: `Authorization: Bearer <token>`.
+
+> Em produção o frontend usa um adapter HTTP especial: chama a Function com `?type=json` e recebe um envelope `{ status, headers, body, isBase64Encoded }`. A interface da API para os clientes é idêntica.
 
 Formato de resposta paginada:
 
@@ -243,7 +245,7 @@ Parâmetros: `type` (obrigatório) + `start`, `end`, `subjectId`, `bookId`, `rea
 |---|---|---|
 | GET | `/api/backups` | Lista backups existentes (ordenados por data desc) |
 | POST | `/api/backups` | Cria backup manual (exporta todas as coleções Appwrite para JSON). Rotação automática: mantém apenas 5 |
-| GET | `/api/backups/:filename/download` | Baixa o arquivo de backup (stream via `res.download`) |
+| GET | `/api/backups/:filename/download` | Baixa o arquivo de backup (do Appwrite Storage) |
 | POST | `/api/backups/:filename/restore` | **Indisponível** — retorna `400`: o Appwrite é a fonte de dados |
 | DELETE | `/api/backups/:filename` | Remove backup |
 
@@ -255,7 +257,7 @@ Parâmetros: `type` (obrigatório) + `start`, `end`, `subjectId`, `bookId`, `rea
 ]
 ```
 
-Backups automáticos: dois agendamentos diários via `node-cron` (18:30 e 23:45). Arquivos em `backend/backups/` como `backup_*.json` — snapshot de todas as coleções Appwrite (`{ exportedAt, source: 'appwrite', collections }`). Validação de `filename`: regex `^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json$`. Não há upload/restauração manual (`multer` foi removido).
+Backups automáticos: dois agendamentos diários — via `node-cron` (dev) ou trigger `schedule` da Appwrite Function (produção). Arquivos no Appwrite Storage (bucket `biblioteca-backups`) como `backup_*.json` — snapshot de todas as coleções Appwrite (`{ exportedAt, source: 'appwrite', collections }`). Validação de `filename`: regex `^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json$`. Não há upload/restauração manual (`multer` foi removido).
 
 ---
 

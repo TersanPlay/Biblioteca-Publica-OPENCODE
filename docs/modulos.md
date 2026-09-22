@@ -28,7 +28,7 @@
 - `lib/settings.ts` — `getSettings()` (regras + dados institucionais; defaults estruturais sem dados de demonstração).
 - `lib/cover.ts` — `resolveAmazonCover` (scrap da Amazon por ISBN), `isbn13To10`.
 - `lib/audit.ts` — `writeAudit`.
-- `backup.routes.ts` — `createBackup` (exporta coleções Appwrite para JSON), `rotateBackups` (mantém 5), `startBackupCrons` (18:30 e 23:45), download e exclusão. Restauração manual indisponível (Appwrite é a fonte de dados).
+- `backup.routes.ts` — `createBackup` (exporta coleções Appwrite para JSON e envia ao Appwrite Storage), `rotateBackups` (mantém 5), `startBackupCrons` (dev, 18:30 e 23:45 via node-cron; em produção quem agenda é o trigger `schedule` da Function), download e exclusão. Restauração manual indisponível (Appwrite é a fonte de dados).
 
 ## Frontend — rotas (`src/app/router/routes.tsx`)
 

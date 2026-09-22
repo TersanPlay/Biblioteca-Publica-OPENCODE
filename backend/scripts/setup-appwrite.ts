@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { ID, databases, APPWRITE_DATABASE_ID } from '../src/lib/appwrite';
-import { Client, Databases } from 'node-appwrite';
+import { APPWRITE_BACKUP_BUCKET_ID, APPWRITE_DATABASE_ID } from '../src/lib/appwrite';
+import { Client, Databases, ID, Storage } from 'node-appwrite';
 
 const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
 const projectId = process.env.APPWRITE_PROJECT_ID || '6a95dd2d001313fa9653';
@@ -14,6 +14,7 @@ if (!apiKey) {
 // Client com API key para operações administrativas (criar db/collections)
 const admin = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
 const dbs = new Databases(admin);
+const stor = new Storage(admin);
 
 async function ensureDatabase(): Promise<string> {
   let databaseId = APPWRITE_DATABASE_ID;
@@ -210,7 +211,35 @@ async function main() {
   console.log('Setup Appwrite concluído.');
 }
 
-main().catch((err) => {
+async function ensureBucket(): Promise<void> {
+  const bucketId = APPWRITE_BACKUP_BUCKET_ID;
+  try {
+    await stor.getBucket(bucketId);
+    console.log(`Bucket "${bucketId}" já existe`);
+  } catch {
+    await stor.createBucket({
+      bucketId,
+      name: 'Biblioteca - Backups',
+      fileSecurity: false,
+      maximumFileSize: 50_000_000,
+      allowedFileExtensions: ['json'],
+      permissions: [],
+    });
+    console.log(`Bucket "${bucketId}" criado`);
+  }
+}
+
+async function mainStorage() {
+  await ensureBucket();
+  console.log('Setup Storage Appwrite concluído.');
+}
+
+async function run() {
+  await main();
+  await mainStorage();
+}
+
+run().catch((err) => {
   if (err?.type === 'project_not_found' || err?.type === 'unauthorized_scope') {
     console.error('[fatal] Falha de autenticação Appwrite. Confira APPWRITE_API_KEY e scopes da chave.');
   } else {

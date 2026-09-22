@@ -15,7 +15,8 @@
     "appwrite": {
       "type": "remote",
       "enabled": true,
-      "url": "https://mcp.appwrite.io"
+      "url": "https://mcp.appwrite.io",
+      "oauth": {}
     }
   }
 }
